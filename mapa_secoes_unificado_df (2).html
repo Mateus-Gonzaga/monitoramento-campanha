@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seções Eleitorais — Região Norte</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #header {
+    background: #1a3a5c; color: white; padding: 14px 20px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+    flex: 0 0 auto;
+  }
+  #header h1 { font-size: 15.5px; margin: 0; font-weight: 600; line-height: 1.35; }
+  #header p { font-size: 11px; margin: 4px 0 0; color: #9fb8d1; }
+  #legend {
+    display: flex; gap: 8px 16px; font-size: 10.3px; align-items: center; flex-wrap: wrap;
+    border-top: 1px solid rgba(255,255,255,0.14); padding-top: 9px;
+  }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .controlsBar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    border-top: 1px solid rgba(255,255,255,0.14); padding-top: 10px;
+  }
+  .controlGroup { display: flex; align-items: center; gap: 8px; }
+  .controlLabel {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #7fa0c2; font-weight: 700; margin-right: 1px;
+  }
+  .controlDivider { width: 1px; height: 22px; background: rgba(255,255,255,0.16); }
+  #toggleBtn {
+    background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
+    padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  #toggleBtn:hover { background: #e6eef5; }
+  #rotateGroup { display: flex; align-items: center; gap: 4px; }
+  #rotateGroup button {
+    background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
+    width: 26px; height: 26px; font-size: 13px; font-weight: 700; cursor: pointer; line-height: 1;
+  }
+  #rotateGroup button:hover { background: #e6eef5; }
+  #rotSlider { width: 110px; accent-color: #ffffff; cursor: pointer; }
+  #rotLabel { font-size: 11px; color: #cfe0f0; min-width: 32px; text-align: center; }
+  #zoomGroup { display: flex; align-items: center; gap: 4px; }
+  #zoomGroup button {
+    background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
+    width: 26px; height: 26px; font-size: 15px; font-weight: 700; cursor: pointer; line-height: 1;
+  }
+  #zoomGroup button:hover { background: #e6eef5; }
+  #zoomGroup button:disabled { opacity: 0.4; cursor: default; }
+  #zoomSlider { width: 90px; accent-color: #ffffff; cursor: pointer; }
+  #zoomLabel { font-size: 11px; color: #cfe0f0; min-width: 28px; text-align: center; }
+  #hint { font-size: 10px; color: #cfe0f0; }
+  #headerToggle {
+    position: fixed; top: 8px; right: 8px; z-index: 3000;
+    background: #1a3a5c; color: white; border: 2px solid white; border-radius: 50%;
+    width: 30px; height: 30px; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  }
+  #headerToggle:hover { background: #24537f; }
+  #mapOuter { position: relative; flex: 1 1 auto; overflow: hidden; background: #dde5ec; }
+  #map {
+    position: absolute; top: 50%; left: 50%;
+    width: 200%; height: 200%;
+    transform-origin: 50% 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transition: transform 0.35s ease;
+  }
+  .leaflet-popup-content b { color: #1a3a5c; }
+  .leaflet-popup-content { font-size: 12.5px; }
+  .badge { display:inline-block; font-size: 9.5px; padding: 1px 5px; border-radius: 7px; margin-left: 4px; font-weight:600;}
+  .badge-ativo { background:#e3f5e6; color:#2e7d32; }
+  .badge-bloqueado { background:#fbe4e0; color:#b83227; }
+  .badge-regiao { background:#eef2f7; color:#1a3a5c; }
+  .badge-restaurante { background:#fff0e0; color:#c2440a; }
+
+  .point-label {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 3px;
+    padding: 0px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #000000;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    white-space: nowrap;
+    line-height: 14px;
+  }
+  .leaflet-tooltip-top.point-label::before { display: none; }
+
+  .restaurant-label {
+    background: #fff4e8;
+    border: 1.5px solid #e8590c;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 800;
+    color: #7a2e00;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    white-space: nowrap;
+    line-height: 12px;
+  }
+  .leaflet-tooltip-top.restaurant-label::before { border-top-color: #e8590c; }
+
+  .restaurant-icon-img {
+    border-radius: 6px;
+    border: 2px solid #e8590c;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    background: white;
+  }
+
+  #drawToggleBtn {
+    position: fixed; bottom: 10px; left: 10px; z-index: 3000;
+    background: #1a3a5c; color: white; border: none; border-radius: 24px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    display: flex; align-items: center; gap: 6px;
+  }
+  #drawToggleBtn:hover { background: #24537f; }
+  #drawToggleBtn.active { background: #b83227; }
+
+  #drawPanel {
+    position: fixed; bottom: 56px; left: 10px; z-index: 2999;
+    background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    width: 250px; max-height: 70vh; overflow-y: auto;
+    padding: 12px; display: none; font-size: 12.5px; color: #333;
+  }
+  #drawPanel.open { display: block; }
+  #drawPanel h3 { font-size: 13px; margin: 0 0 8px; color: #1a3a5c; }
+  #drawPanel .hint { font-size: 11px; color: #777; margin-bottom: 10px; line-height: 1.4; }
+  #drawLabel {
+    width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px;
+    font-size: 12.5px; margin-bottom: 8px; box-sizing: border-box;
+  }
+  #colorSwatches { display: flex; gap: 6px; margin-bottom: 10px; }
+  .swatch {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .swatch.selected { border-color: #1a3a5c; }
+  .drawActions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .drawActions button {
+    flex: 1 1 auto; background: #eef2f7; color: #1a3a5c; border: none;
+    border-radius: 6px; padding: 6px 8px; font-size: 11.5px; font-weight: 600; cursor: pointer;
+  }
+  .drawActions button:hover { background: #dde6f0; }
+  .drawActions button.primary { background: #1a3a5c; color: white; }
+  .drawActions button.primary:hover { background: #24537f; }
+  #routesList { border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
+  #routesList .routeItem {
+    display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px;
+  }
+  #routesList .routeDot { width: 12px; height: 4px; border-radius: 2px; flex: 0 0 auto; }
+  #routesList .routeName { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #routesList .routeDel {
+    background: none; border: none; color: #b83227; font-weight: 700; cursor: pointer; font-size: 13px;
+  }
+  #clearAllBtn { color: #b83227; margin-top: 6px; }
+
+  #votersToggleBtn {
+    position: fixed; bottom: 10px; right: 10px; z-index: 3000;
+    background: #1a3a5c; color: white; border: none; border-radius: 24px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  #votersToggleBtn:hover { background: #24537f; }
+  #votersToggleBtn.active { background: #2e7d32; }
+
+  #votersPanel {
+    position: fixed; bottom: 56px; right: 10px; z-index: 2999;
+    background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    width: 330px; padding: 14px; display: none; font-size: 12.5px; color: #333;
+  }
+  #votersPanel.open { display: block; }
+  #votersPanel h3 { font-size: 13.5px; margin: 0 0 2px; color: #1a3a5c; }
+  #votersPanel .subtitle { font-size: 10px; color: #999; margin: 0 0 4px; }
+  #votersPanel .candidateNote {
+    font-size: 10px; color: #7a2e00; background: #fff4e8; border-radius: 5px;
+    padding: 4px 7px; margin-bottom: 8px; line-height: 1.4;
+  }
+  #votersPanel .voterHeader {
+    display: flex; justify-content: space-between; font-size: 9.5px; color: #999;
+    font-weight: 700; text-transform: uppercase; padding: 0 0 3px; border-bottom: 1px solid #eee;
+  }
+  #votersPanel .voterHeader .colName { flex: 1 1 auto; }
+  #votersPanel .voterHeader .colNum { width: 62px; text-align: right; }
+  #votersPanel .voterRow {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px;
+  }
+  #votersPanel .voterRow .name { display: flex; align-items: center; gap: 6px; color: #333; flex: 1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #votersPanel .voterRow .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  #votersPanel .voterRow .num { font-weight: 700; color: #1a3a5c; width: 62px; text-align: right; }
+  #votersPanel .voterRow .num.votes { color: #b83227; }
+  #votersPanel .voterRow .num.na { color: #bbb; font-weight: 500; font-size: 10.5px; }
+  #votersPanel .voterTotal {
+    display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px;
+    border-top: 2px solid #1a3a5c; font-size: 12.5px; font-weight: 800; color: #1a3a5c;
+  }
+  #votersPanel .voterTotal .num.votes { color: #b83227; }
+  #votersPanel .voterTotal .totalLabel { flex: 1 1 auto; }
+  #votersPanel .voterTotal .num { width: 62px; text-align: right; }
+</style>
+</head>
+<body class="">
+
+<button id="headerToggle" title="Ocultar menu">▲</button>
+
+<button id="drawToggleBtn" title="Marcar ruas no mapa">✏️ Marcar ruas</button>
+<div id="drawPanel">
+  <h3>Marcar ruas</h3>
+  <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
+  <input type="text" id="drawLabel" value="Comércio Local" placeholder="Nome da marcação">
+  <div id="colorSwatches">
+    <div class="swatch selected" style="background:#d32f2f" data-color="#d32f2f"></div>
+    <div class="swatch" style="background:#1565c0" data-color="#1565c0"></div>
+    <div class="swatch" style="background:#2e7d32" data-color="#2e7d32"></div>
+    <div class="swatch" style="background:#e8590c" data-color="#e8590c"></div>
+    <div class="swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
+    <div class="swatch" style="background:#000000" data-color="#000000"></div>
+  </div>
+  <div class="drawActions">
+    <button id="undoPointBtn">↩ Desfazer ponto</button>
+    <button id="cancelLineBtn">✕ Cancelar</button>
+    <button id="finishLineBtn" class="primary">✓ Finalizar traçado</button>
+  </div>
+  <button id="eraseToggleBtn" style="width:100%; background:#fbe4e0; color:#b83227; border:none; border-radius:6px; padding:8px; font-size:12px; font-weight:700; cursor:pointer; margin-bottom:10px;">🧹 Ativar modo apagar</button>
+  <p id="eraseHint" style="font-size:10.5px; color:#888; margin:-6px 0 10px; line-height:1.4; display:none;">Modo apagar ativo: clique em qualquer linha do mapa para removê-la na hora.</p>
+  <div id="routesList"></div>
+  <button id="clearAllBtn" style="width:100%; background:none; border:none; font-size:11.5px; font-weight:600; cursor:pointer;">Limpar todas as marcações</button>
+  <button id="saveFileBtn" style="width:100%; margin-top:10px; background:#1a3a5c; color:white; border:none; border-radius:6px; padding:9px; font-size:12.5px; font-weight:700; cursor:pointer;">💾 Salvar alterações no arquivo</button>
+  <p style="font-size:10.5px; color:#888; margin:6px 0 0; line-height:1.4;">Baixa uma nova cópia deste mapa com suas marcações já gravadas dentro do arquivo.</p>
+</div>
+
+<div id="header">
+  <div>
+    <h1>Seções Eleitorais — Região Norte</h1>
+    <p>Planaltina, Arapoanga, Sobradinho, Sobradinho II, Fercal, Itapoã, Varjão, São Sebastião e Paranoá</p>
+  </div>
+
+  <div id="legend">
+    <span><span class="dot" style="background:#2e7d32; border:2px solid #1a6fb0"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span>
+  </div>
+
+  <div class="controlsBar">
+    <div class="controlGroup">
+      <span class="controlLabel">Títulos</span>
+      <button id="toggleBtn">Ocultar títulos</button>
+      <span id="hint">a partir do zoom</span>
+    </div>
+
+    <div class="controlDivider"></div>
+
+    <div class="controlGroup">
+      <span class="controlLabel">Zoom</span>
+      <div id="zoomGroup">
+        <button id="zoomOut" title="Diminuir zoom">−</button>
+        <input type="range" id="zoomSlider" min="0" max="19" step="0.1" value="10">
+        <span id="zoomLabel">14.0</span>
+        <button id="zoomIn" title="Aumentar zoom">+</button>
+      </div>
+    </div>
+
+    <div class="controlDivider"></div>
+
+    <div class="controlGroup">
+      <span class="controlLabel">Rotação</span>
+      <div id="rotateGroup">
+        <button id="rotateCCW" title="Girar 90° à esquerda">⟲</button>
+        <input type="range" id="rotSlider" min="0" max="360" step="1" value="0">
+        <span id="rotLabel">0°</span>
+        <button id="rotateCW" title="Girar 90° à direita">⟳</button>
+        <button id="rotateReset" title="Resetar rotação">⤾</button>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
+
+<button id="votersToggleBtn" title="Ver eleitores por região">📊 Eleitores por região</button>
+<div id="votersPanel">
+  <h3>Eleitorado x Votação por região</h3>
+  <p class="subtitle">Eleições Gerais 2022 — TSE</p>
+  <p class="candidateNote">Coluna "Votos" = votos de Joaquim Roriz Neto (PL) em 2022. Arapoanga não é RA oficial: seus votos entram somados aos de Planaltina.</p>
+  <div class="voterHeader"><span class="colName">Região</span><span class="colNum">Eleit.</span><span class="colNum">Votos</span></div>
+  <div id="votersList"></div>
+  <div class="voterTotal"><span class="totalLabel">TOTAL</span><span id="votersGrandTotal" class="num"></span><span id="votersGrandTotalVotes" class="num votes"></span></div>
+</div>
+
+<div id="mapOuter">
+  <div id="map" class="leaflet-container leaflet-touch leaflet-retina leaflet-fade-anim leaflet-touch-zoom" tabindex="0" style="transform: translate(-50%, -50%) rotate(0deg); outline-style: none; cursor: crosshair;"></div>
+</div>
+</div>
+
+<script type="application/json" id="savedRoutesData">[{"label":"Comércio Local","color":"#d32f2f","points":[[-15.601942051054573,-47.65396231980075],[-15.602517784500872,-47.64200712712852],[-15.604316941107799,-47.64219392701403],[-15.603777195782358,-47.654074399732046],[-15.601906067660526,-47.65399967977784]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.60663371414637,-47.654333169506714],[-15.607165310307975,-47.64304126760607],[-15.60650081489069,-47.64304126760607],[-15.605991366946263,-47.654310171743155],[-15.60658941440403,-47.654356167270244]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.612089116317108,-47.64559368493005],[-15.620436680070593,-47.646060684643786],[-15.620400699921845,-47.64609804462089],[-15.627236814740474,-47.646396924437695],[-15.627146867342269,-47.64837700322405],[-15.618403791763177,-47.64796604347593]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.618385801511176,-47.64800340345303],[-15.611963180640618,-47.64768584364768]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.620886431396672,-47.64820888332709],[-15.62076050112486,-47.65009556217068],[-15.621354171728699,-47.65007688218213],[-15.621462111653702,-47.64820888332709]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.620765085100377,-47.65016535867691],[-15.620710549477796,-47.65135452853743],[-15.622046668052567,-47.65142531245772],[-15.622387513233036,-47.65138284210554],[-15.622469315992001,-47.65067500290285],[-15.623628184901829,-47.65073163003907],[-15.623628184901829,-47.65026445616528],[-15.621378609854197,-47.65009457475665]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.617630209500211,-47.65487763923955],[-15.617792122308451,-47.65046916194168],[-15.62063457077566,-47.65059992186153]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.617648199818522,-47.654914999216665],[-15.61903344958923,-47.654989719170864],[-15.619141390736596,-47.65229980081961],[-15.619555164608162,-47.65218772088831],[-15.619645115339296,-47.65061860185009]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.597043804693486,-47.65420213923562],[-15.624106475672534,-47.65568104279552]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.632367000248138,-47.655804284758865],[-15.63091905881515,-47.65237815817839],[-15.62681254627642,-47.652279564607724],[-15.625079715707601,-47.655311316905554],[-15.632248316909353,-47.655804284758865]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.62664638507645,-47.65538526208355],[-15.628355465267878,-47.652476751749056]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.627548401398945,-47.65543455886888],[-15.629257474063923,-47.65242745496372]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.628118093871816,-47.655409910476216],[-15.629803424826349,-47.65242745496372]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.628782733087487,-47.65548385565422],[-15.630325637237267,-47.652476751749056]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.629304948101002,-47.655508504046885],[-15.63091905881515,-47.65267393889036]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.629922109582111,-47.65555780083221],[-15.631156426964782,-47.653290148707]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.631061479737964,-47.65560709761753],[-15.631773582866208,-47.654300732806284]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.62353677204336,-47.65573033958087],[-15.625198403200445,-47.66243470238583],[-15.62382162405595,-47.66302626380979],[-15.621851389532136,-47.66322345095112],[-15.62092561014134,-47.66312485738046],[-15.621020562066219,-47.66144876667923],[-15.621376631392677,-47.6613994698939],[-15.621376631392677,-47.6608325568626],[-15.620617016081628,-47.6608325568626],[-15.62049832593494,-47.661350173108566],[-15.62092561014134,-47.6613994698939]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.621020562066219,-47.660733963291925],[-15.62109177598099,-47.658836037056695],[-15.61828506977111,-47.65855568632301]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.621187735683195,-47.65870189946146],[-15.62418716638559,-47.658928408006325]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.621141364961936,-47.65871424346221],[-15.620831288507148,-47.658679746816894],[-15.62086451100691,-47.657621849693804],[-15.621141364961936,-47.657633348575594],[-15.621241032294224,-47.65556354985654]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.621396070270253,-47.658679746816894],[-15.621429292678418,-47.657633348575594],[-15.621185661560055,-47.657621849693804]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.619771046296503,-47.6574554776595],[-15.619860996932845,-47.65549407886172]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.618439772262498,-47.6573807577053],[-15.618529723483134,-47.65543803889607]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.617378344877565,-47.657287357762556],[-15.617450306229888,-47.655381998930416]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.616320388976773,-47.65725853992612],[-15.61641534303522,-47.655335965298214]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.615018691610729,-47.65714645385743],[-15.615101354447171,-47.655301094055176]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.613613418291484,-47.657060623168945],[-15.613737413383602,-47.655301094055176]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.612704118658062,-47.657017707824714],[-15.612745450547068,-47.65517234802247]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.624066812761619,-47.65019386185017],[-15.624240341157229,-47.64632986366049]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.62427890300295,-47.650253923998186],[-15.624510273924894,-47.646349884376484]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.617866479647116,-47.64975359671023],[-15.618000763938575,-47.64602378095204]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.618135048142085,-47.64975359671023],[-15.618336474282348,-47.64605863904324]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.628191290368337,-47.65557127976741],[-15.627886000037373,-47.66201714809672]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.617866479647116,-47.64274712037944],[-15.61424077052388,-47.63075593700732]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.618817567123726,-47.67301590812209],[-15.618817567123726,-47.679217664320795],[-15.618313840487035,-47.68123510308424],[-15.618313840487035,-47.68713797946615],[-15.61599848788369,-47.6903313892032],[-15.610901719722282,-47.69726253326044]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.643678535388592,-47.65022632209066],[-15.643210846048895,-47.633264892486956]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.646556600100253,-47.63315281255566],[-15.63565571631725,-47.633451692372475]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.640008944167478,-47.65048784193038],[-15.639577223227167,-47.63830848939555]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.64096313561516,-47.640896726155646],[-15.641505715759777,-47.640896726155646],[-15.64148910618487,-47.63999981337737],[-15.6409686721545,-47.64000556281826],[-15.640957599075653,-47.640885227273856]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.63980400833221,-47.643775434069774],[-15.643412481504797,-47.64370571788738]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.641599861074031,-47.64008047640278],[-15.643345347701114,-47.64008047640278]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.640077287389698,-47.65056153628531],[-15.64548090191574,-47.65005558548731]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.637774064058632,-47.650837509447854],[-15.63998870235624,-47.6506075318124]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.63549296156153,-47.65106748708331],[-15.637707624539276,-47.65084900832978]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.635477678211517,-47.65100915749941],[-15.635448455395977,-47.6500836127061],[-15.633096005062537,-47.643316514709205],[-15.631313384946079,-47.643544107691135]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.635670761314207,-47.633459837998466],[-15.636026919782374,-47.643762660328086]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.63901958233162,-47.65157128126614],[-15.644703850584902,-47.65102956159818]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.640998301221055,-47.6514778813234],[-15.640998301221055,-47.654784239296816],[-15.63698687846191,-47.654802919285345]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.639451304448214,-47.6547468793197],[-15.639469292849986,-47.653719479949444],[-15.640422675880982,-47.653738159937994],[-15.640440664197362,-47.654690839354046]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.641052266013686,-47.654784239296816],[-15.643000748137679,-47.65476905226692]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.751897394570156,-47.780281971252016],[-15.748451041425206,-47.77014649712212],[-15.748538661297236,-47.76978234835099],[-15.745734806651212,-47.76186211257882],[-15.74611449756604,-47.76119450649839],[-15.75213104351452,-47.763804239358194],[-15.752890400727551,-47.76410769666748],[-15.757796948125119,-47.77767223839223],[-15.757796948125119,-47.77800604143242],[-15.752072631303616,-47.780281971252016]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.756219856532622,-47.77852191885819],[-15.753036430635369,-47.7696913111582]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.756453500504394,-47.77837019020355],[-15.75359134332761,-47.77020718858398],[-15.75496401557876,-47.77005545992934]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.745541565197101,-47.761786065997285],[-15.743412926962478,-47.76266420722323],[-15.745698081834387,-47.76890876705231],[-15.746418056813164,-47.771803380723085],[-15.744946800876038,-47.77242133195617],[-15.74459998446497,-47.77092903623726],[-15.744792898276533,-47.77077217482687],[-15.744474171010939,-47.76965671590854],[-15.745673589437812,-47.769133844540576]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.745997339937404,-47.76117324829102],[-15.742734225733441,-47.75975704193116],[-15.740379794341036,-47.760701179504395],[-15.738314481194426,-47.761945724487305],[-15.737157896668037,-47.763104438781745],[-15.73773618975364,-47.76469230651856],[-15.741081996031168,-47.76331901550293],[-15.740255876143928,-47.76095867156983]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.738397094123131,-47.76203155517579],[-15.739057996344249,-47.76404857635499]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.74488210426734,-47.77250289916993],[-15.741040690116542,-47.77404785156251],[-15.739925427249009,-47.77091503143311],[-15.745501680395195,-47.76872634887695]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.759751409840481,-47.78078556060791],[-15.768631170248863,-47.77936935424805],[-15.778914686195122,-47.779583930969245]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.759834014052878,-47.7812147140503],[-15.76838336825166,-47.77992725372315],[-15.77449572917067,-47.779884338378906],[-15.777923526641375,-47.78168678283692]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.759824465626886,-47.78124302223279],[-15.76012420686598,-47.782064115707925],[-15.761268669344515,-47.7816394121863],[-15.761009803396135,-47.780931572983604]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.75971546870298,-47.78079000514306],[-15.75893886392614,-47.778652330750916],[-15.75993346249232,-47.77821347044524],[-15.760791810762557,-47.78052102624604]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.768992547618982,-47.783864736557014],[-15.76828011733017,-47.775088548660285]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.769230023826038,-47.7837896347046],[-15.768538244535376,-47.775099277496345]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.769075366253091,-47.78451323934926],[-15.766118938703405,-47.784442455429],[-15.766132562892262,-47.78580150669818],[-15.769075366253091,-47.7858581338344],[-15.769129862209128,-47.784555709701415]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.782528611048935,-47.777541023202666],[-15.782460495601962,-47.778220548837254],[-15.78230382998696,-47.77853199808644],[-15.782092671792574,-47.77870895788712],[-15.78031484730584,-47.7794097186978],[-15.77915005729269,-47.78057057499023],[-15.776037106117288,-47.78397528155521]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.776207400086719,-47.78406730065155],[-15.780056005658974,-47.779933519707804],[-15.78036934024202,-47.77963622724266],[-15.782133541137675,-47.77897085839212],[-15.782467307147648,-47.77869480110307],[-15.782692088028396,-47.77825594079739],[-15.78277382646867,-47.77757641516282]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.714408169063596,-47.87283338217703],[-15.712723536138324,-47.87455876966361],[-15.712438808070054,-47.87510103430224],[-15.711323619303503,-47.8756925957262],[-15.710540610776228,-47.87717149928611],[-15.709567777806996,-47.878921535165375],[-15.708500028956202,-47.87966098694532],[-15.707456002446477,-47.882421606923835],[-15.708239022830364,-47.882840629599144],[-15.708784762530316,-47.88148496800255],[-15.709211862145235,-47.88049903229594],[-15.710350790073878,-47.87971028373066],[-15.712035442625336,-47.876555289469486],[-15.712415080713086,-47.876579937862154],[-15.714099716189914,-47.87423834055896],[-15.713862444430667,-47.87379466949098],[-15.714289533398208,-47.87320310806701]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.682043405339204,-47.83626966805764],[-15.680955330865382,-47.832767170204455],[-15.681090216445742,-47.83269245025025],[-15.682232244119938,-47.836344388011845]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.682016428356276,-47.83627900805192],[-15.681836581712192,-47.836213628092004],[-15.680739513751435,-47.83280453018155]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.648988122319489,-47.78578310351774],[-15.650031088201592,-47.78784366798366],[-15.65031090741141,-47.788490896565904],[-15.649751268608926,-47.79172703947713],[-15.64930610028613,-47.793787603943045]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.649471448633422,-47.79388006516908],[-15.650463535909958,-47.78862298403167],[-15.650438097834773,-47.78846447907275],[-15.649166190041708,-47.785611389812246]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.650285469317256,-47.78989102370299],[-15.651760873548497,-47.790181616127676],[-15.651964376745033,-47.78925700386734],[-15.651455618373971,-47.788041799182295],[-15.65047625494636,-47.788490896565904]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.649432947953013,-47.79395852564799],[-15.647676573980483,-47.80307843093417],[-15.646254478375287,-47.81050664216365]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.649238254442105,-47.793874740600586],[-15.645932266121898,-47.81065464019776]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.64184103161097,-47.80949592590333],[-15.646221542232933,-47.787351608276374]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.641510423229743,-47.80949592590333],[-15.64589094092979,-47.787351608276374]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.65027136483407,-47.81172752380372],[-15.653535959369831,-47.79537677764893]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.650601959057324,-47.81181335449219],[-15.653825224726432,-47.795419692993164]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.640849204864875,-47.82099723815919],[-15.644568530374748,-47.82803535461426],[-15.651635062560551,-47.82623291015626]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.637967899473976,-47.821771398045044],[-15.639818735798883,-47.82383353179396],[-15.641380365928967,-47.82687668062729]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.640801985788732,-47.82083042439265],[-15.641708113949445,-47.819228767111944],[-15.642074419939425,-47.81790739985537],[-15.64290342581122,-47.814764147442],[-15.643308287923295,-47.814844230306036],[-15.642498562898078,-47.817747234127296],[-15.64211297842653,-47.817667151263265]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.641576617514746,-47.819605178216264],[-15.642742625197712,-47.81998722830258],[-15.643030965249203,-47.820074117984504],[-15.643093923547164,-47.82010213796732],[-15.643534631090441,-47.81854235892338],[-15.643570607174517,-47.81844895898062],[-15.64216753520845,-47.81784185935273]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.643570607174302,-47.825818214463894],[-15.644577934960155,-47.82548197466998],[-15.646232819841421,-47.82417437547144],[-15.6485352461021,-47.823501895883645],[-15.648715122062299,-47.82324037604395],[-15.648391345220094,-47.821222937280496],[-15.646916355342345,-47.81909341858575],[-15.64846329567375,-47.816403500234514]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.64349865499984,-47.81319054220384],[-15.648391345220094,-47.8159925404864],[-15.649470599367639,-47.816739740028424],[-15.65069374718364,-47.81778581938723],[-15.651413242481718,-47.819056058608666],[-15.65180896381667,-47.82051309771559],[-15.651988836897576,-47.82514573487607],[-15.651988836897576,-47.82589293441809],[-15.65191688768421,-47.82619181423489],[-15.651701039892185,-47.826266534189095]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.639721130308468,-47.82918061240295],[-15.640476640825174,-47.82813453304413],[-15.641268125041645,-47.82731261354791],[-15.641843748003668,-47.8269016537998],[-15.642527298168005,-47.826490694051685],[-15.642994989070054,-47.82622917421198],[-15.643318774452926,-47.8261170942807]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.602399394022195,-47.87082715172644],[-15.601990339863631,-47.87082715172644],[-15.601554014528999,-47.870175939659944],[-15.601444933050352,-47.86935484618481],[-15.601444933050352,-47.8679108542113],[-15.601554014528999,-47.866608430078344],[-15.601608555246575,-47.865957218011864],[-15.601472203425482,-47.86522106524104],[-15.601308581120536,-47.8650228702643]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.60138124964306,-47.87068232213775],[-15.601699301512115,-47.870457773445956]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.601368527558044,-47.870688926511036],[-15.599606511163664,-47.871851296209776]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.598938594857598,-47.87214849300776],[-15.599466566974783,-47.87193715306252],[-15.599581066772787,-47.87187771370292]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.598919511502627,-47.87216170175433],[-15.59842334365048,-47.87204282303513],[-15.598308843206556,-47.871851296209776],[-15.598938594857598,-47.87125690261384],[-15.599625594454755,-47.870715344004196],[-15.599860954898952,-47.8704841909391],[-15.600032704241912,-47.87029926848703],[-15.600147203724037,-47.87022662038087],[-15.600516146065168,-47.87006151104866],[-15.60072606123904,-47.87002188480893],[-15.600929615141965,-47.86992281920961],[-15.601406693810723,-47.86987658859658]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.896999777307432,-47.783881044010876],[-15.911227291149205,-47.76449060403668],[-15.914326723096622,-47.76036947510483]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.914784012288049,-47.76063365003637],[-15.90020105568324,-47.780499604887304],[-15.897406291671075,-47.78430372390133]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.902182773907162,-47.767185188338274],[-15.903605533922853,-47.76544163379019],[-15.904113660060405,-47.76459627400931],[-15.904316910155908,-47.76343390431056],[-15.904723409730583,-47.762430039570766],[-15.905485594218094,-47.76153184480357],[-15.906857519014647,-47.76084498998159],[-15.908991605645491,-47.75999963020069],[-15.911227291149205,-47.758995765460895],[-15.91285322862327,-47.75857308557045],[-15.91304807432172,-47.758458852767944],[-15.913089345098328,-47.758340835571296],[-15.912903626536849,-47.758147716522224],[-15.912676636950893,-47.75794386863709],[-15.912594095219694,-47.75781512260438],[-15.912604412937947,-47.75743961334229],[-15.912666319236342,-47.7571713924408],[-15.912552824341383,-47.756903171539314],[-15.912449647108536,-47.75702118873596],[-15.912202021533572,-47.757407426834106],[-15.911964713404606,-47.757654190063484],[-15.9117480405204,-47.75800824165345],[-15.911428189645356,-47.75848031044007],[-15.911252787336494,-47.75871634483338],[-15.91115992722865,-47.758866548538215],[-15.911118656055834,-47.758952379226685],[-15.911108338261323,-47.75898456573486]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.909942549402594,-47.767380150844154],[-15.914415237391008,-47.76936409953986],[-15.916166752415673,-47.77014466951849],[-15.917292718297519,-47.77102281074445],[-15.918356124725124,-47.771803380723085],[-15.919419525523718,-47.77264899819992],[-15.920232710571401,-47.77326694943303],[-15.920545473174714,-47.77375480566965],[-15.921327377552382,-47.77421013815721]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.922797349541973,-47.77505575563406],[-15.92145248197036,-47.7742426619063]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.923203935639606,-47.77544604062337],[-15.922828625424847,-47.775120803132275]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.92373562390987,-47.77590137311091],[-15.923329038888665,-47.77551108812159]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.905570438357792,-47.77371456006932],[-15.909109173066884,-47.77629030958638],[-15.901854699881547,-47.786133352383665],[-15.897342639437506,-47.78714525397966]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.904835021140855,-47.772932052612305],[-15.903349206836625,-47.77173042297364],[-15.900707732078423,-47.77276039123535],[-15.89847896076677,-47.7742624282837],[-15.897116921697279,-47.77567863464356],[-15.888077701515323,-47.77971267700195]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.892122699552326,-47.78241634368897],[-15.896539084154533,-47.77649402618409],[-15.896621632476544,-47.77593612670899],[-15.902152292885475,-47.76739597320557],[-15.906527185170441,-47.77082920074463]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.8881276430783,-47.77971408955496],[-15.894281966245043,-47.78481053181439],[-15.896460442615494,-47.78645271876465],[-15.897059519482099,-47.78718887153547],[-15.89749521062821,-47.78713224439925]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.905714249000946,-47.76153184480357],[-15.906501835707024,-47.76227153461185],[-15.907162389920332,-47.76287913695435],[-15.907568883742083,-47.76327539935165],[-15.907899159367064,-47.763856584201015],[-15.90822943444943,-47.76459627400931],[-15.908585114700527,-47.765256711338125],[-15.909144039537923,-47.76612848861215],[-15.909474312575,-47.766630420982054]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.900798113870286,-47.772864949365974],[-15.901611126423651,-47.77422545026335],[-15.902119257600551,-47.77474059137984],[-15.90289415517347,-47.77536140246893],[-15.903097406501576,-47.77551990742785]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.74727778815894,-47.765893936157234],[-15.752151678539771,-47.76396274566651]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.66444127953069,-47.80395833880708],[-15.65665761301775,-47.78726248313444]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.60126490659992,-47.86500230985785],[-15.600929168308866,-47.86493259367547],[-15.600559855554305,-47.86481059035628],[-15.59997231116575,-47.864008854258714],[-15.599519061488088,-47.86341626670836],[-15.599183320340694,-47.862945682477175],[-15.598914727027298,-47.862004514014835],[-15.59881400444414,-47.86151650073806],[-15.598511836398071,-47.8609239131877],[-15.598041796331046,-47.85996531567974],[-15.597974647662177,-47.859634163813375]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.601273375872703,-47.864923690289174],[-15.601140473144582,-47.86425675514637]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.601118322681536,-47.86425675514637],[-15.601627782726803,-47.864003779747385]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.601096172216062,-47.864164764092195],[-15.600741764443773,-47.862186956427315]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.598814661469017,-47.87205299698818],[-15.600808215947715,-47.870098187086825]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.600830366444232,-47.870098187086825],[-15.601229074972883,-47.87060413788482]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.59987299564763,-47.872387425919726],[-15.601906067660755,-47.87102378675556]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.599639101115235,-47.87078094690441],[-15.600592669459862,-47.87229402597698]]},{"label":"Comércio Local","color":"#d32f2f","points":[[-15.599495165885859,-47.871827026263226],[-15.59877548822471,-47.870874346847145]]}]</script>
+
+<script>
+const locais = [{"name": "Caic Assis Chateaubriand", "short": "Caic Assis Chateaubriand", "lat": -15.61801776, "lng": -47.64197608, "address": "AREA ESPECIAL 04 SRL, PLANALTINA - CEP 70000000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Especial 01", "short": "CE Especial 01", "lat": -15.6196724, "lng": -47.6538776, "address": "SETOR EDUCACIONAL LT 01, PLANALTINA - CEP 73310100", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental  03", "short": "CEF 03", "lat": -15.6158534, "lng": -47.6405566, "address": "EQ 10/20 CONJ H LOTE 01-BURITIS II, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental  São José", "short": "CEF São José", "lat": -15.7041622, "lng": -47.3737344, "address": "DF 250 NUCLEO RURAL SÃO JOSÉ, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental 01", "short": "CEF 01", "lat": -15.6223843, "lng": -47.6540826, "address": "SETOR EDUCACIONAL LT M, PLANALTINA - CEP 73310150", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental 02", "short": "CEF 02", "lat": -15.6219941, "lng": -47.6566037, "address": "AV. SÃO PAULO QD 52 LOTE B, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental 04", "short": "CEF 04", "lat": -15.622108, "lng": -47.6518227, "address": "SETOR EDUCACIONAL LOTE C/D, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental 08 De Planaltina", "short": "CEF 08 De Planaltina", "lat": -15.6213731, "lng": -47.6457829, "address": "EQ 03/04 LOTE H-SRL, PLANALTINA - CEP 73300000", "situacao": "BLOQUEADO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental Arapoanga", "short": "CEF Arapoanga", "lat": -15.640276, "lng": -47.6406895, "address": "ÁREA ESPECIAL COND. ARAPOANGA, PLANALTINA - CEP 73300000", "situacao": "BLOQUEADO", "regiao": "Arapoanga"}, {"name": "Centro De Ensino Fundamental Cond Estância Iii", "short": "CEF Cond Estância Iii", "lat": -15.6178621, "lng": -47.6867358, "address": "MODULO 01 RUA 01/16-ESTÂNCIA III, PLANALTINA - CEP 70000000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental Jk", "short": "CEF Jk", "lat": -15.6012899, "lng": -47.6876925, "address": "BR 020 MOD. 07 LOTES 16/19-COND. MESTRE DARMAS, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental Nossa Senhora De Fátima", "short": "CEF Nossa Senhora De Fátima", "lat": -15.60288469, "lng": -47.65789315, "address": "AREA ESPECIAL 01 VNS DE FATIMA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental Pipiripau Ii", "short": "CEF Pipiripau Ii", "lat": -15.5349437, "lng": -47.512018, "address": "BR 020 DF 365 DF 017 NUCLEO RURAL PIPIRIPAU, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Fundamental Rio Preto", "short": "CEF Rio Preto", "lat": -15.7629614, "lng": -47.4928285, "address": "DF 320 NÚCLEO RURAL RIO PRETO, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro De Ensino Médio 02", "short": "CEM 02", "lat": -15.6212844, "lng": -47.6536368, "address": "SETOR EDUCACIONAL LOTES J/L, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional 01", "short": "C.E. 01", "lat": -15.6198276, "lng": -47.6516849, "address": "SETOR EDUCACIONAL LOTES A/B, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional 03", "short": "C.E. 03", "lat": -15.60309356, "lng": -47.65035138, "address": "EQ 02/03 SETOR RESIDENCIAL NORTE, PLANALTINA - CEP 73340025", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Delta", "short": "C.E. Delta", "lat": -15.61338926, "lng": -47.64592826, "address": "QUADRA 01 CONJ. F LOTES 21/31, SETOR RESIDENCIAL LESTE - CEP 73350106", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Dona América Guimarães", "short": "C.E. Dona América Guimarães", "lat": -15.6362664, "lng": -47.6327492, "address": "Q. 10K CONJ.C - ÁREA ESPECIAL - ST. HAB. ARAPOANGA, ARAPOANGA - CEP 73368854", "situacao": "ATIVO", "regiao": "Arapoanga"}, {"name": "Centro Educacional Osorio Bacchin", "short": "C.E. Osorio Bacchin", "lat": -15.5268748, "lng": -47.6303645, "address": "GLEBA G LOTE 22 NÚCLEO RURAL JARDIM MORUMBI, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Pompilio Marques De Souza", "short": "C.E. Pompilio Marques De Souza", "lat": -15.5993133, "lng": -47.6830344, "address": "COND. MESTRE D'ARMAS MOD 1 LOTE 13, PLANALTINA - CEP 73370000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Stella Dos Cherubins Guimarães Trois", "short": "C.E. Stella Dos Cherubins Guimarães Trois", "lat": -15.63104, "lng": -47.6599327, "address": "RUA HUGO LOBO QD 97 AREA ESPECIAL, PLANALTINA - CEP 73335000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Taquara", "short": "C.E. Taquara", "lat": -15.6334555, "lng": -47.5221482, "address": "BR 020 DF 019 NUCLEO RURAL TAQUARA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Vale Do Amanhecer", "short": "C.E. Vale Do Amanhecer", "lat": -15.6798237, "lng": -47.6566691, "address": "AE 03 LOTE 01-VILA PACHECO, VALE DO AMANHECER - CEP 73370001", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Centro Educacional Varzeas", "short": "C.E. Varzeas", "lat": -15.8208781, "lng": -47.5704574, "address": "DF 120 NÚCLEO RURAL TABATINGA, PLANALTINA - CEP 73307997", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe  Mestre D'Armas", "short": "EC Mestre D'Armas", "lat": -15.672355, "lng": -47.6465198, "address": "DF 130 DF 150 KM 18 VALE DO AMANHECER, PLANALTINA - CEP 73370000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 01", "short": "EC 01", "lat": -15.6254219, "lng": -47.6552759, "address": "AV. INDEPENDÊNCIA 102, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 01 Do Arapoanga", "short": "EC 01 Do Arapoanga", "lat": -15.6397664, "lng": -47.6359265, "address": "EQ 15/16 CONJ. I AREA ESPECIAL-ARAPOANGA, ARAPOANGA - CEP 73370100", "situacao": "ATIVO", "regiao": "Arapoanga"}, {"name": "Escola Classe 02 Do Arapoanga", "short": "EC 02 Do Arapoanga", "lat": -15.6399686, "lng": -47.6293286, "address": "EM FRENTE A QUADRA 21, CONJ F  ÁREA ESPECIAL-ARAPOANGA, ARAPOANGA - CEP 73370100", "situacao": "ATIVO", "regiao": "Arapoanga"}, {"name": "Escola Classe 03", "short": "EC 03", "lat": -15.61528083, "lng": -47.64606104, "address": "Q.1/2 PROJEÇÃO G-SRL, SETOR RESIDENCIAL LESTE - CEP 73350150", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 04", "short": "EC 04", "lat": -15.6212997, "lng": -47.6462299, "address": "EQ 3/4 PROJEÇÃO G SRL, SETOR RESIDENCIAL LESTE - CEP 73350350", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 05", "short": "EC 05", "lat": -15.6316227, "lng": -47.6545569, "address": "AV. CONTORNO Q. 17-VILA VICENTINA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 06", "short": "EC 06", "lat": -15.6272764, "lng": -47.6467975, "address": "EQ 05/06 LOTE G-SRL, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 07", "short": "EC 07", "lat": -15.6422838, "lng": -47.6637212, "address": "QUADRA 45 BAIRRO NOSSA SRA FÁTIMA, PLANALTINA - CEP 73340791", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 09", "short": "EC 09", "lat": -15.6104549, "lng": -47.6451059, "address": "LOTE 01 VIA WL 01-SRN, SETOR RESIDENCIAL NORTE - CEP 73340700", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 11", "short": "EC 11", "lat": -15.603334, "lng": -47.6460613, "address": "EQ 4/5 SETOR RESIDENCIAL NORTE, JARDIM RORIZ - CEP 73340500", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 13", "short": "EC 13", "lat": -15.60347372, "lng": -47.64287504, "address": "EQ 6/7 SETOR RESIDENCIAL NORTE, JARDIM RORIZ - CEP 73340700", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 14", "short": "EC 14", "lat": -15.61384101, "lng": -47.63190345, "address": "QD 13 CONJ A LT 01 BURITIS III, SETOR RESIDENCIAL LESTE - CEP 73355300", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 15", "short": "EC 15", "lat": -15.6184137, "lng": -47.6852786, "address": "ESTÂNCIA NOVA PLANALTINA QUADRA 01 ÁREA ESPECIAL, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe 16", "short": "EC 16", "lat": -15.6192448, "lng": -47.6812183, "address": "COND. NOVA PLANALTINA Q. 01 RUA A ÁREA ESPECIAL, ESTANCIA MESTRE D'ARMAS - CEP 73380000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Altamir", "short": "EC Altamir", "lat": -15.6332525, "lng": -47.6811145, "address": "DF 128 KM 8 BICA DO DER, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Aprodarmas", "short": "EC Aprodarmas", "lat": -15.6642626, "lng": -47.6574224, "address": "FAZENDA MESTRE DARMAS, PLANALTINA - CEP 73301970", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Estância", "short": "EC Estância", "lat": -15.6057955, "lng": -47.6701594, "address": "DF 14 LT 63/67 COND. ESTÂNCIA PLANALTINA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Eta 44", "short": "EC Eta 44", "lat": -15.592917, "lng": -47.7296058, "address": "BR 020 KM 18 NUCLEO EXPERIMENTAL EMBRAPA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Monjolo", "short": "EC Monjolo", "lat": -15.5377964, "lng": -47.6862922, "address": "BR 020 DF 335 FAZENDA MONJOLO, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Parana", "short": "EC Parana", "lat": -15.6149674, "lng": -47.6455861, "address": "EQ 01/02 LOTE H-SRL, PLANALTINA - CEP 73300000", "situacao": "BLOQUEADO", "regiao": "Planaltina"}, {"name": "Escola Classe Rajadinha", "short": "EC Rajadinha", "lat": -15.7536796, "lng": -47.6506491, "address": "DF 006 NÚCLEO RURAL RAJADINHA, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Santos Dumont", "short": "EC Santos Dumont", "lat": -15.678664, "lng": -47.6481146, "address": "DF 130 KM 18-NÚCLEO RURAL SANTOS DUMONT, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Classe Vale Do Sol", "short": "EC Vale Do Sol", "lat": -15.6543682, "lng": -47.6514303, "address": "COND VALE DO SOL DF 134 AREA ESPECIAL LT 1/6, PLANALTINA - CEP 73300000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Escola Técnica De Saúde De Planaltina", "short": "Escola Técnica De Saúde De Planaltina", "lat": -15.6246916, "lng": -47.655052, "address": "ENTRE AV. CONTORNO/AV. INDEPENDÊNCIA - SETOR HOSPITALAR, PLANALTINA - CEP 70000000", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Unidade De Internação De Planaltina", "short": "Unid. Internação De Planaltina", "lat": -15.6406091, "lng": -47.6645903, "address": "LOTES 44/45 BAIRRO NOSSA SENHORA DE FÁTIMA, PLANALTINA - CEP 73342010", "situacao": "ATIVO", "regiao": "Planaltina"}, {"name": "Caic Julia Kubitschek", "short": "Caic Julia Kubitschek", "lat": -15.6437254, "lng": -47.8235541, "address": "AR 13 CONJUNTO 3 AREA ESPECIAL 01, SOBRADINHO II - CEP 73060100", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Caic Unesco", "short": "Caic Unesco", "lat": -15.9019729, "lng": -47.7739064, "address": "QUADRA 05 CONJ.A ÁREA ESPECIAL 1, SAO SEBASTIAO - CEP 71691047", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 05", "short": "EC 05", "lat": -15.6402317, "lng": -47.8018309, "address": "QUADRA 9 AREA ESPECIAL 05, SOBRADINHO - CEP 73035090", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro Educacional Sao Bartolomeu", "short": "C.E. Sao Bartolomeu", "lat": -15.8937925, "lng": -47.7788185, "address": "AE QUADRA 02 CONJUNTO 03 LOTE 04, SAO SEBASTIAO - CEP 71697045", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro Educacional 03", "short": "C.E. 03", "lat": -15.6496443, "lng": -47.8120745, "address": "QUADRA 5 AREA ESPECIAL 5, SOBRADINHO - CEP 73030050", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 16 De Sobradinho - Nova Colina", "short": "EC 16 De Sobradinho - Nova Colina", "lat": -15.6493489, "lng": -47.7549174, "address": "CONDOMINIO NOVO SETOR DE MANSÕES - ÁREA ESPECIAL, SOBRADINHO - CEP 73270900", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro Educacional Sao Jose", "short": "C.E. Sao Jose", "lat": -15.9126381, "lng": -47.7595262, "address": "QUADRA 16 AREA ESPECIAL BAIRRO SAO JOSE, SAO SEBASTIAO - CEP 71693059", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro De Ensino Fundamental Dra. Zilda Arns", "short": "CEF Dra. Zilda Arns", "lat": -15.7391941, "lng": -47.7623306, "address": "QUADRA 378, CONJUNTO N, ÁREA ESPECIAL, NÚMERO 2, ITAPOÃ - CEP 71590000", "situacao": "ATIVO", "regiao": "Itapoã"}, {"name": "Escola Master Ii", "short": "Escola Master Ii", "lat": -15.9078679, "lng": -47.7619638, "address": "QUADRA 25 LOTE 01/04 VILA SAO JOSE, SAO SEBASTIAO - CEP 71693026", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro De Ensino Fundamental Queima Lençol", "short": "CEF Queima Lençol", "lat": -15.5892085, "lng": -47.8435432, "address": "SITIO PATRICIA DF 325 KM 8/9 LOBERAL ZONA RURAL, SOBRADINHO - CEP 73001970", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Uniprojeção", "short": "Uniprojeção", "lat": -15.6622586, "lng": -47.8399112, "address": "ST.DE IND. DE SOB., QUADRA 02, RUA B, LOTES 01 A 06, SOBRADINHO - CEP 73020020", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Instituto Educacional Santo Elias", "short": "Instituto Educacional Santo Elias", "lat": -15.6455046, "lng": -47.7874638, "address": "QUADRA 11 AREA RESERVADA 3, SOBRADINHO - CEP 73040110", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 04", "short": "EC 04", "lat": -15.6462723, "lng": -47.777033, "address": "QUADRA 15 AREA ESPECIAL 02, SOBRADINHO - CEP 73001970", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 02 Do Itapoã", "short": "EC 02 Do Itapoã", "lat": -15.7394781, "lng": -47.7633099, "address": "DEL LAGO QD. 378 CONJ. L ÁREA ESPECIAL, ITAPOÃ - CEP 71590000", "situacao": "ATIVO", "regiao": "Itapoã"}, {"name": "Escola Classe Engenho Velho", "short": "EC Engenho Velho", "lat": -15.6016908, "lng": -47.8695073, "address": "ROD DF 150 KM 12 CD ENGENHO VELHO, SOBRADINHO - CEP 73001970", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental Do Bosque", "short": "CEF Do Bosque", "lat": -15.9051513, "lng": -47.7568029, "address": "ÁREA INSTITUCIONAL Nº 02, RESIDENCIAL DO BOSQUE - SÃO SEBASTIÃO, DF, SAO SEBASTIAO - CEP 71691101", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro De Ensino Médio 01 - Centrão", "short": "CEM 01 - Centrão", "lat": -15.9014625, "lng": -47.7792896, "address": "QUADRA 202/203 AREA ESPECIAL -RESIDENCIAL OESTE, SAO SEBASTIAO - CEP 71692641", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro Educacional La Salle", "short": "C.E. La Salle", "lat": -15.6508518, "lng": -47.782092, "address": "QUADRA 14 AREA ESP. LOTES 24/27, SOBRADINHO - CEP 73050140", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro Educacional São Francisco - Chicão", "short": "C.E. São Francisco - Chicão", "lat": -15.9146224, "lng": -47.7629232, "address": "QUADRA 17, LOTE 100, ÁREA ESPECIAL, SAO SEBASTIAO - CEP 71693317", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 10", "short": "EC 10", "lat": -15.659071, "lng": -47.7969356, "address": "QUADRA 02 CONJUNTO B/C LOTE E, SOBRADINHO - CEP 73015020", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Faculdade Projeção", "short": "Faculdade Projeção", "lat": -15.6562522, "lng": -47.8044817, "address": "Q 04  AREA S/N, SOBRADINHO - CEP 73025040", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Educação Infantil 01", "short": "CEI 01", "lat": -15.6605557, "lng": -47.8051358, "address": "QUADRA 02  AREA ESPECIAL, SOBRADINHO - CEP 73015020", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 08", "short": "CEF 08", "lat": -15.6393266, "lng": -47.8282653, "address": "AR 03 LOTE 04 AREA ESP. ST OESTE, SOBRADINHO II - CEP 73060130", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Centro Educacional 02", "short": "C.E. 02", "lat": -15.6482312, "lng": -47.7861616, "address": "QUADRA 12 AREA ESPECIAL 5, SOBRADINHO - CEP 73010120", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 15", "short": "EC 15", "lat": -15.6522792, "lng": -47.8088243, "address": "QUADRA 3 AREA ESPECIAL 1/2, SOBRADINHO - CEP 73030030", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental Miguel Arcanjo", "short": "CEF Miguel Arcanjo", "lat": -15.892431, "lng": -47.7814225, "address": "QD 02, AE 03, BAIRRO SÃO BARTOLOMEU, SÃO SEBASTIÃO, BRASÍLIA - DF, SAO SEBASTIAO - CEP 71697040", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 01 Do Itapoã", "short": "EC 01 Do Itapoã", "lat": -15.7451486, "lng": -47.7697126, "address": "DEL LAGO QUADRA 61 CONJUNTO E ÁREA ESPECIAL, ITAPOÃ - CEP 71590000", "situacao": "ATIVO", "regiao": "Itapoã"}, {"name": "Escola Classe Ceramica Da Bencao", "short": "EC Ceramica Da Bencao", "lat": -15.9045722, "lng": -47.7695692, "address": "RUA DA GAMELEIRA 331 CENTRO, SAO SEBASTIAO - CEP 71691085", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe Agrovila", "short": "EC Agrovila", "lat": -15.9107142, "lng": -47.7585786, "address": "QUADRA 100 - CONJ. Q - AREA ESPECIAL N. 01BAIRRO VILA NOVA, SAO SEBASTIAO - CEP 71693107", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 303", "short": "EC 303", "lat": -15.9033309, "lng": -47.7820688, "address": "QD 303 CONJ 01 LOTE 34, SAO SEBASTIAO - CEP 71692805", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe Bela Vista", "short": "EC Bela Vista", "lat": -15.9135703, "lng": -47.7548824, "address": "RUA 01 LT 221- BAIRRO BELA VISTA, SAO SEBASTIAO - CEP 71694102", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 13 Ar 05", "short": "EC 13 Ar 05", "lat": -15.6403359, "lng": -47.8246216, "address": "AR 05 AREA ESPECIAL 1, SOBRADINHO II - CEP 73060500", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Escola Classe Vila Nova", "short": "EC Vila Nova", "lat": -15.9134932, "lng": -47.7594672, "address": "RUA 31 NUMERO 200 BAIRRO SÃO JOSÉ, SAO SEBASTIAO - CEP 71693032", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 12", "short": "EC 12", "lat": -15.6598858, "lng": -47.8081614, "address": "QUADRA 01 AREA ESPECIAL SETOR DE INDUSTRIA, SOBRADINHO - CEP 73020010", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Escola Classe Sobradinho Dos Melos", "short": "EC Sobradinho Dos Melos", "lat": -15.7970072, "lng": -47.6939568, "address": "DF 250 - VIA LAGO NORTE - KM 07 - NR, ITAPOÃ - CEP 73000000", "situacao": "ATIVO", "regiao": "Itapoã"}, {"name": "Centro De Ensino Fundamental 07", "short": "CEF 07", "lat": -15.6444107, "lng": -47.8252031, "address": "AR 13 CONJUNTO 05 LOTE 01, SOBRADINHO II - CEP 73060100", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Centro De Ensino Santa Rita De Cassia", "short": "Centro De Ensino Santa Rita De Cassia", "lat": -15.6429764, "lng": -47.80303, "address": "QUADRA 09 AREA ESPECIAL 02, SOBRADINHO - CEP 73035090", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro Interescolar De Linguas -Cil", "short": "CIL -Cil", "lat": -15.6443397, "lng": -47.7880839, "address": "QUADRA 11 AREA RESERVADA 01, SOBRADINHO - CEP 73040110", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 05", "short": "CEF 05", "lat": -15.6438918, "lng": -47.7976722, "address": "QUADRA 10 RUA 4 AREA ESPECIAL 4/5, SOBRADINHO - CEP 73005100", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 04", "short": "CEF 04", "lat": -15.646375, "lng": -47.7783367, "address": "QUADRA 15 AREA ESPECIAL 2, SOBRADINHO - CEP 73045150", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 01", "short": "CEF 01", "lat": -15.6577874, "lng": -47.7928649, "address": "QUADRA 02 C/D LOTE F, SOBRADINHO - CEP 73015400", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 03", "short": "CEF 03", "lat": -15.6508567, "lng": -47.7996267, "address": "QUADRA 6 AREA ESPECIAL 3, SOBRADINHO - CEP 73026603", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 104", "short": "EC 104", "lat": -15.896373, "lng": -47.7828464, "address": "QUADRA 104 CJ. 01 LOTE 01 BAIRRO RESIDENCIAL OESTE SAO SEBASTIAO, SAO SEBASTIAO - CEP 71692300", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Colegio Positivo Pingo De Gente", "short": "Colegio Positivo Pingo De Gente", "lat": -15.6622586, "lng": -47.8399112, "address": "CONDOMINIO HALLEY MOD. C LOTES 09,26 E 27, SOBRADINHO - CEP 73092910", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Escola Classe Boa Vista", "short": "EC Boa Vista", "lat": -15.5883233, "lng": -47.922365, "address": "ROD DF 205 OESTE KM 06 COMUNIDADE BOA VISTA, SOBRADINHO - CEP 73001970", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Escola Classe Vila Do Boa", "short": "EC Vila Do Boa", "lat": -15.877915, "lng": -47.7911474, "address": "VILA DO BOA SEM NUMERO  SAO SEBASTIAO, SAO SEBASTIAO - CEP 71697305", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Escola Classe 01", "short": "EC 01", "lat": -15.6498467, "lng": -47.7985483, "address": "QUADRA 6 AREA ESPECIAL 1 RUA 5, SOBRADINHO - CEP 73025060", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental Cerâmica São Paulo", "short": "CEF Cerâmica São Paulo", "lat": -15.8878014, "lng": -47.7790286, "address": "RUA 01, LT 101, SETOR TRADICIONAL, SAO SEBASTIAO - CEP 71691101", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro Educacional 04", "short": "C.E. 04", "lat": -15.6462144, "lng": -47.8259604, "address": "AR 10 CONJUNTO 09 LOTE 01, SOBRADINHO II - CEP 73060100", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Centro De Ensino Especial Nº 01", "short": "CE Especial Nº 01", "lat": -15.6504349, "lng": -47.7790945, "address": "QUADRA 14 AREA ESPECIAL RUA 5, SOBRADINHO - CEP 73050140", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Escola Classe 14", "short": "EC 14", "lat": -15.6431511, "lng": -47.8168522, "address": "AR 19 CONJUNTO 07 LOTE 01, SOBRADINHO II - CEP 73060100", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Escola Classe Aspalha", "short": "EC Aspalha", "lat": -15.7325081, "lng": -47.8337997, "address": "SMLN - TRECHO 04, CONJUNTO 01, CH 160, VARJÃO - CEP 71540045", "situacao": "ATIVO", "regiao": "Varjão"}, {"name": "Escola Classe Rua Do Mato", "short": "EC Rua Do Mato", "lat": -15.6110748, "lng": -47.8772901, "address": "DF 150 KM 11 CHACARA 4 ESTRADA DA FERCAL, SOBRADINHO - CEP 73001970", "situacao": "BLOQUEADO", "regiao": "Fercal"}, {"name": "Centro De Ensino Medio 01", "short": "CEM 01", "lat": -15.6533186, "lng": -47.7986834, "address": "QUADRA 04 AREA ESPECIAL 4, SOBRADINHO - CEP 73025040", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Escola Classe 17 Vila Rabelo", "short": "EC 17 Vila Rabelo", "lat": -15.6233148, "lng": -47.847149, "address": "AV CENTRAL AE VILA RABELO, SOBRADINHO - CEP 73001970", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental 01 Do Varjao", "short": "CEF 01 Do Varjao", "lat": -15.7089987, "lng": -47.878189, "address": "QD. 07, CJ. D, LT. 02, ÁREA ESPECIAL, VARJÃO, VARJÃO - CEP 71540400", "situacao": "ATIVO", "regiao": "Varjão"}, {"name": "Escola Classe Catingueiro", "short": "EC Catingueiro", "lat": -15.5636765, "lng": -47.9353741, "address": "DF 205 KM 13 ESTRADA SECUNDARIA, SOBRADINHO - CEP 73001970", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe 11", "short": "EC 11", "lat": -15.6456349, "lng": -47.7888056, "address": "QUADRA 11 AREA ESPECIAL, SOBRADINHO - CEP 73040110", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe Cora Coralina", "short": "EC Cora Coralina", "lat": -15.7290477, "lng": -47.7498921, "address": "COND. ENTRELAGOS, ROD. DF 250, KM 02, ITAPOÃ - CEP 73001970", "situacao": "BLOQUEADO", "regiao": "Itapoã"}, {"name": "Escola Classe Corrego Do Ouro", "short": "EC Corrego Do Ouro", "lat": -15.513346, "lng": -47.9228912, "address": "DF 205 FAZENDA CORREGO DO OURO, SOBRADINHO - CEP 73000000", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Colégio Modelo De São Sebastião", "short": "Colégio Modelo De São Sebastião", "lat": -15.9039048, "lng": -47.7618392, "address": "RUA 9 QUADRA 01 CONJUNTO A CHACARA 07 VILA NOVA, SAO SEBASTIAO - CEP 71693111", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro De Ensino Fundamental 09 - Antigo Coer", "short": "CEF 09 - Antigo Coer", "lat": -15.6427656, "lng": -47.8210439, "address": "AR 13 CONJ 1 AREA ESPECIAL 3, SOBRADINHO II - CEP 73062301", "situacao": "BLOQUEADO", "regiao": "Sobradinho II"}, {"name": "Centro De Ensino Fundamental Nova Betania", "short": "CEF Nova Betania", "lat": -15.9495084, "lng": -47.7931446, "address": "BR 251  KM 38  NOVA BETANIA, SAO SEBASTIAO - CEP 71693994", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Centro De Educação Nery Lacerda - Cenel", "short": "C.Educ. Nery Lacerda - Cenel", "lat": -15.6367978, "lng": -47.8444844, "address": "SH MANSÕES SOBRADINHO CONDOMÍNIO MINI-CHÁCARAS ES 11B - SOBRADINHO, SOBRADINHO II - CEP 73083280", "situacao": "ATIVO", "regiao": "Sobradinho II"}, {"name": "Centro De Educação Infantil 03", "short": "CEI 03", "lat": -15.6474002, "lng": -47.7744002, "address": "QUADRA 16 AREA ESPECIAL D/1, SOBRADINHO - CEP 73050160", "situacao": "BLOQUEADO", "regiao": "Sobradinho"}, {"name": "Centro De Ensino Fundamental Prof Carlos Mota", "short": "CEF Prof Carlos Mota", "lat": -15.6180831, "lng": -47.9506085, "address": "RODOVIA DF-01 KM 13 RUA 8 CHACARA 187-LAGO OESTE, SOBRADINHO II - CEP 73100240", "situacao": "ATIVO", "regiao": "Sobradinho II"}, {"name": "Escola Classe Basevi", "short": "EC Basevi", "lat": -15.6457807, "lng": -47.8894055, "address": "DF 001 KM 6 VILA BASEVI, SOBRADINHO - CEP 73100011", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Escola Classe Santa Helena", "short": "EC Santa Helena", "lat": -15.7063483, "lng": -47.79943, "address": "DF 001 GRANJA SANTA HELENA, SOBRADINHO - CEP 73001970", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Centro Educacional Fercal", "short": "C.E. Fercal", "lat": -15.5905834, "lng": -47.8810443, "address": "DF 205 OESTE KM 19 FERCAL, SOBRADINHO - CEP 73001970", "situacao": "BLOQUEADO", "regiao": "Fercal"}, {"name": "Escola Classe Morro Do Sansao", "short": "EC Morro Do Sansao", "lat": -15.6197231, "lng": -47.8231737, "address": "FAZENDA SOBRADINHO PROX. AO POLO DE CINEMA, SOBRADINHO - CEP 73000000", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Complexo Penintenciário Da Papuda", "short": "Complexo Penintenciário Da Papuda", "lat": -15.9138645, "lng": -47.786738, "address": "RODOVIA DF - 465, KM 04, FAZENDA PAPUDA., SAO SEBASTIAO - CEP 71686670", "situacao": "ATIVO", "regiao": "São Sebastião"}, {"name": "Instituto Pedagogico Crescer", "short": "Instituto Pedagogico Crescer", "lat": -15.6824259, "lng": -47.8416279, "address": "BR 020 KM 2 COND. GRAN VILLE, LOTE 9, SOBRADINHO - CEP 73251904", "situacao": "ATIVO", "regiao": "Sobradinho"}, {"name": "Colégio Gonçalves Dias", "short": "Col. Gonçalves Dias", "lat": -15.7674419, "lng": -47.7806602, "address": "QUADRA 23 CONJUNTO I LOTES 04/06, PARANOÁ - CEP 71570230", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 06 Do Paranoa", "short": "EC 06 Do Paranoa", "lat": -15.7577761, "lng": -47.7837416, "address": "QUADRA 33, ÁREA ESPECIAL, MÓDULO G, PARANOÁ - CEP 71540075", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro De Ensino Fundamental Abc", "short": "CEF Abc", "lat": -15.7661804, "lng": -47.7804049, "address": "QUADRA 27 CONJUNTO A LOTES 06/07, PARANOÁ - CEP 71572702", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Caic Santa Paulina", "short": "Caic Santa Paulina", "lat": -15.7781646, "lng": -47.7842277, "address": "QUADRA 05 AREA ESPECIAL 01, PARANOÁ - CEP 71570050", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 05 Do Paranoa", "short": "EC 05 Do Paranoa", "lat": -15.7667377, "lng": -47.7771713, "address": "QUADRA 24 CJ. I AREA ESPECIAL, PARANOÁ - CEP 71572400", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro De Ensino Médio 01 Do Paranoa", "short": "CEM 01 Do Paranoa", "lat": -15.7824766, "lng": -47.77972926, "address": "QUADRA 4 CONJ. A LOTE 05 - PARANOA, PARANOÁ - CEP 70297400", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro De Ensino Fundamental 01 Do Paranoa", "short": "CEF 01 Do Paranoa", "lat": -15.7791214, "lng": -47.7833669, "address": "QUADRA 03 AREA ESPECIAL 06, PARANOÁ - CEP 71570030", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro De Ensino Fundamental 02 Do Paranoa", "short": "CEF 02 Do Paranoa", "lat": -15.78279799, "lng": -47.77897658, "address": "QUADRA 04 CONJ. A LOTE 05, PARANOÁ - CEP 71570401", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro Social João Paulo Ii", "short": "C.Social João Paulo Ii", "lat": -15.7806653, "lng": -47.7839003, "address": "QUADRA 03 ÁREA ESPECIAL LOTE 01, PARANOÁ - CEP 71570030", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 03 Do Paranoa", "short": "EC 03 Do Paranoa", "lat": -15.773172, "lng": -47.7808929, "address": "QUADRA 17 CONJ. C LOTE 08, PARANOÁ - CEP 71571703", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 04 Do Paranoa", "short": "EC 04 Do Paranoa", "lat": -15.773077, "lng": -47.776929, "address": "QD 14 CJ F LT 01, PARANOÁ - CEP 71570140", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro De Ensino Fundamental 03 Do Paranoá", "short": "CEF 03 Do Paranoá", "lat": -15.7650179, "lng": -47.7793309, "address": "QUADRA 26 CONJ G ÁREA ESPECIAL, PARANOÁ - CEP 71570260", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 01 Do Paranoa", "short": "EC 01 Do Paranoa", "lat": -15.76474748, "lng": -47.77840761, "address": "QD 26 CJ G LT 01 - AREA ESPECIAL, PARANOÁ - CEP 71570260", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Centro Educacional Darcy Ribeiro", "short": "C.E. Darcy Ribeiro", "lat": -15.7625092, "lng": -47.7831292, "address": "QUADRA 31 CJ. F  AREA ESPECIAL, PARANOÁ - CEP 71573105", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe 02 Do Paranoa", "short": "EC 02 Do Paranoa", "lat": -15.7639351, "lng": -47.7784965, "address": "QD 30 CJ E LT 17, PARANOÁ - CEP 71570300", "situacao": "ATIVO", "regiao": "Paranoá"}, {"name": "Escola Classe Alto Interlagos", "short": "EC Alto Interlagos", "lat": -15.826611, "lng": -47.7439474, "address": "CHÁCARA INTERLAGOS, N 10A, ALTIPLANO LESTE, PARANOÁ - CEP 71680354", "situacao": "ATIVO", "regiao": "Paranoá"}];
+const REGION_COLORS = {"Planaltina": "#1a6fb0", "Arapoanga": "#c99a1e", "Sobradinho": "#2e9e6b", "Sobradinho II": "#5ec9a0", "Fercal": "#8c5ec2", "Itapoã": "#0e8f8f", "Varjão": "#d98a1f", "São Sebastião": "#c9376b", "Paranoá": "#7b4b94"};
+const ZOOM_LABEL_THRESHOLD = 14;
+
+const map = L.map('map', { zoomControl: false, zoomSnap: 0.1, zoomDelta: 1 }).setView([-15.72, -47.68], 10);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function colorFor(loc) {
+  return REGION_COLORS[loc.regiao] || '#555555';
+}
+
+const bounds = [];
+const markers = [];
+let userForcedHidden = false;
+let userForcedShown = false;
+
+locais.forEach(function(loc) {
+  const color = colorFor(loc);
+  const isBloqueado = loc.situacao === 'BLOQUEADO';
+  const marker = L.circleMarker([loc.lat, loc.lng], {
+    radius: isBloqueado ? 5 : 6,
+    fillColor: isBloqueado ? '#b83227' : '#2e7d32',
+    color: isBloqueado ? '#b83227' : color,
+    weight: isBloqueado ? 2 : 2.5,
+    fillOpacity: isBloqueado ? 0.35 : 0.9
+  }).addTo(map);
+
+  let badges = '<span class="badge badge-regiao">' + loc.regiao + '</span>';
+  badges += isBloqueado
+    ? '<span class="badge badge-bloqueado">BLOQUEADO</span>'
+    : '<span class="badge badge-ativo">ATIVO</span>';
+
+  marker.bindPopup(
+    '<b>' + loc.name + '</b>' + badges +
+    '<br>' + loc.address
+  );
+
+  if (!isBloqueado) {
+    marker.bindTooltip(loc.short, {
+      permanent: false,
+      direction: 'top',
+      offset: [0, -5],
+      className: 'point-label'
+    });
+    markers.push(marker);
+  }
+
+  bounds.push([loc.lat, loc.lng]);
+});
+
+// Restaurantes Comunitários (GDF/Sedes) — sempre visíveis, título maior
+const restaurantes = [{"name": "Restaurante Comunitário de Planaltina", "short": "Planaltina", "lat": -15.6136609, "lng": -47.6506394, "address": "Setor Recreativo e Cultural, Módulo Esportivo, Via WL 1, Planaltina — atende Planaltina e Arapoanga"}, {"name": "Restaurante Comunitário de Sobradinho II", "short": "Sobradinho II", "lat": -15.6416703, "lng": -47.8195225, "address": "AR 13, Área Especial 8, Quadra 3, Setor Oeste, Sobradinho II — atende Sobradinho, Sobradinho II e Fercal"}, {"name": "Restaurante Comunitário do Itapoã", "short": "Itapoã", "lat": -15.7450862, "lng": -47.7705756, "address": "Quadra 61, Área Especial, entre conjuntos D/E, Condomínio Dellago, Itapoã"}, {"name": "Restaurante Comunitário de São Sebastião", "short": "São Sebastião", "lat": -15.903895, "lng": -47.7738595, "address": "Centro de Múltiplas Atividades, Lote 02, próximo à Administração Regional, São Sebastião"}, {"name": "Restaurante Comunitário do Varjão", "short": "Varjão", "lat": -15.7091216, "lng": -47.8809151, "address": "Quadra 08, Conjunto F, Varjão"}, {"name": "Restaurante Comunitário do Paranoá", "short": "Paranoá", "lat": -15.7793438, "lng": -47.7810528, "address": "Quadra 02, Lote A, Feira Livre, Área Especial, Paranoá"}];
+
+const restaurantIcon = L.icon({
+  iconUrl: 'data:image/png;base64,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',
+  iconSize: [40, 24],
+  iconAnchor: [20, 24],
+  popupAnchor: [0, -22],
+  className: 'restaurant-icon-img'
+});
+
+restaurantes.forEach(function(r) {
+  const marker = L.marker([r.lat, r.lng], { icon: restaurantIcon }).addTo(map);
+
+  marker.bindPopup(
+    '<b>' + r.name + '</b><span class="badge badge-restaurante">RESTAURANTE COMUNITÁRIO</span>' +
+    '<br>' + r.address
+  );
+
+  marker.bindTooltip('🍽 ' + r.short, {
+    permanent: true,
+    direction: 'top',
+    offset: [0, -22],
+    className: 'restaurant-label'
+  });
+
+  bounds.push([r.lat, r.lng]);
+});
+
+map.fitBounds(bounds, { padding: [30, 30] });
+
+function getTooltipRect(marker) {
+  const tt = marker.getTooltip();
+  if (!tt) return null;
+  const el = tt.getElement();
+  if (!el) return null;
+  return el.getBoundingClientRect();
+}
+
+function rectsOverlap(a, b, pad) {
+  pad = pad || 2;
+  return !(a.right + pad < b.left || a.left - pad > b.right ||
+           a.bottom + pad < b.top || a.top - pad > b.bottom);
+}
+
+function layoutLabels() {
+  const open = markers.filter(function(m) { return m.isTooltipOpen(); });
+  if (open.length === 0) return;
+
+  open.forEach(function(m) {
+    const tt = m.getTooltip();
+    const content = tt.getContent();
+    const cls = tt.options.className;
+    m.unbindTooltip();
+    m.bindTooltip(content, { permanent: false, direction: 'top', offset: [0, -5], className: cls });
+    m.openTooltip();
+  });
+
+  open.sort(function(a, b) {
+    return map.latLngToContainerPoint(a.getLatLng()).y - map.latLngToContainerPoint(b.getLatLng()).y;
+  });
+
+  const placed = [];
+  open.forEach(function(m) {
+    let rect = getTooltipRect(m);
+    if (!rect) return;
+    const collides = placed.some(function(r) { return rectsOverlap(rect, r); });
+    if (collides) {
+      const tt = m.getTooltip();
+      const content = tt.getContent();
+      const cls = tt.options.className;
+      m.unbindTooltip();
+      m.bindTooltip(content, { permanent: false, direction: 'bottom', offset: [0, 10], className: cls });
+      m.openTooltip();
+      rect = getTooltipRect(m);
+    }
+    if (rect) placed.push(rect);
+  });
+}
+
+function labelsShouldShow() {
+  if (userForcedHidden) return false;
+  return userForcedShown || map.getZoom() >= ZOOM_LABEL_THRESHOLD;
+}
+
+function updateLabelsByZoom() {
+  const show = labelsShouldShow();
+  markers.forEach(function(m) {
+    if (show) { m.openTooltip(); } else { m.closeTooltip(); }
+  });
+  if (show) layoutLabels();
+}
+
+map.on('zoomend', updateLabelsByZoom);
+updateLabelsByZoom();
+
+let moveendTimer = null;
+map.on('moveend', function() {
+  if (!labelsShouldShow()) return;
+  clearTimeout(moveendTimer);
+  moveendTimer = setTimeout(layoutLabels, 80);
+});
+
+let labelsVisible = map.getZoom() >= ZOOM_LABEL_THRESHOLD;
+document.getElementById('toggleBtn').addEventListener('click', function() {
+  labelsVisible = !labelsVisible;
+  userForcedHidden = !labelsVisible;
+  userForcedShown = labelsVisible;
+  markers.forEach(function(m) {
+    if (labelsVisible) { m.openTooltip(); } else { m.closeTooltip(); }
+  });
+  if (labelsVisible) layoutLabels();
+  this.textContent = labelsVisible ? 'Ocultar títulos' : 'Mostrar títulos';
+});
+
+// Rotate the map view
+let currentRotation = 0;
+const mapDiv = document.getElementById('map');
+const rotSlider = document.getElementById('rotSlider');
+
+function applyRotation() {
+  currentRotation = ((currentRotation % 360) + 360) % 360;
+  mapDiv.style.transform = 'translate(-50%, -50%) rotate(' + currentRotation + 'deg)';
+  document.getElementById('rotLabel').textContent = currentRotation + '°';
+  rotSlider.value = currentRotation;
+  if (currentRotation === 0 && !drawMode && !eraseMode) {
+    map.dragging.enable();
+  } else if (currentRotation !== 0) {
+    map.dragging.disable();
+  }
+  clearTimeout(applyRotation._t);
+  applyRotation._t = setTimeout(function() {
+    if (labelsShouldShow()) layoutLabels();
+  }, 400);
+}
+
+rotSlider.addEventListener('input', function() {
+  currentRotation = parseInt(this.value, 10);
+  applyRotation();
+});
+document.getElementById('rotateCW').addEventListener('click', function() {
+  currentRotation += 90;
+  applyRotation();
+});
+document.getElementById('rotateCCW').addEventListener('click', function() {
+  currentRotation -= 90;
+  applyRotation();
+});
+document.getElementById('rotateReset').addEventListener('click', function() {
+  currentRotation = 0;
+  applyRotation();
+});
+
+// Zoom controls (custom, in the header)
+const zoomSlider = document.getElementById('zoomSlider');
+const zoomLabel = document.getElementById('zoomLabel');
+const zoomOutBtn = document.getElementById('zoomOut');
+const zoomInBtn = document.getElementById('zoomIn');
+
+function syncZoomControls() {
+  const z = map.getZoom();
+  zoomSlider.value = z;
+  zoomLabel.textContent = z.toFixed(1);
+  zoomOutBtn.disabled = z <= map.getMinZoom();
+  zoomInBtn.disabled = z >= map.getMaxZoom();
+}
+
+zoomSlider.min = map.getMinZoom();
+zoomSlider.max = map.getMaxZoom();
+zoomSlider.step = 0.1;
+map.on('zoomend', syncZoomControls);
+syncZoomControls();
+
+zoomSlider.addEventListener('input', function() {
+  map.setZoom(parseFloat(this.value));
+});
+zoomInBtn.addEventListener('click', function() { map.zoomIn(); });
+zoomOutBtn.addEventListener('click', function() { map.zoomOut(); });
+
+// Collapse / show the top menu, giving the map full screen
+let headerVisible = true;
+const headerEl = document.getElementById('header');
+const headerToggleBtn = document.getElementById('headerToggle');
+headerToggleBtn.addEventListener('click', function() {
+  headerVisible = !headerVisible;
+  headerEl.style.display = headerVisible ? 'flex' : 'none';
+  headerToggleBtn.textContent = headerVisible ? '▲' : '▼';
+  headerToggleBtn.title = headerVisible ? 'Ocultar menu' : 'Mostrar menu';
+  setTimeout(function() {
+    map.invalidateSize();
+    if (labelsShouldShow()) layoutLabels();
+  }, 60);
+});
+
+// ---- Street marking tool (freehand click-to-draw dashed lines) ----
+const drawToggleBtn = document.getElementById('drawToggleBtn');
+const drawPanel = document.getElementById('drawPanel');
+const drawLabelInput = document.getElementById('drawLabel');
+const routesListEl = document.getElementById('routesList');
+const mapEl = document.getElementById('map');
+
+let drawMode = false;
+let eraseMode = false;
+let selectedColor = '#d32f2f';
+let currentPoints = [];
+let currentPolyline = null;
+let currentVertexMarkers = [];
+let savedRoutes = []; // { id, label, color, polyline, points }
+let routeIdCounter = 0;
+
+function popupContentFor(label, id) {
+  return '<b>' + label + '</b><br>' +
+    '<button onclick="window.__deleteRouteFromPopup(' + id + ')" ' +
+    'style="margin-top:6px;background:#b83227;color:white;border:none;border-radius:5px;' +
+    'padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">🗑 Remover esta linha</button>';
+}
+
+function deleteRoute(id) {
+  const idx = savedRoutes.findIndex(function(r) { return r.id === id; });
+  if (idx < 0) return;
+  map.removeLayer(savedRoutes[idx].polyline);
+  savedRoutes.splice(idx, 1);
+  renderRoutesList();
+}
+window.__deleteRouteFromPopup = deleteRoute;
+
+// Load any markings that were saved into this file previously
+(function loadPersistedRoutes() {
+  const dataEl = document.getElementById('savedRoutesData');
+  if (!dataEl) return;
+  let stored;
+  try {
+    stored = JSON.parse(dataEl.textContent || '[]');
+  } catch (e) {
+    stored = [];
+  }
+  stored.forEach(function(r) {
+    const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
+    const polyline = L.polyline(latlngs, {
+      color: r.color, weight: 4, dashArray: '9,7', opacity: 0.9
+    }).addTo(map);
+    routeIdCounter++;
+    const id = routeIdCounter;
+    polyline.on('click', function() {
+      if (eraseMode) { deleteRoute(id); }
+    });
+    polyline.bindPopup(popupContentFor(r.label, id));
+    savedRoutes.push({ id: id, label: r.label, color: r.color, polyline: polyline });
+  });
+})();
+
+document.querySelectorAll('.swatch').forEach(function(sw) {
+  sw.addEventListener('click', function() {
+    document.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('selected'); });
+    sw.classList.add('selected');
+    selectedColor = sw.getAttribute('data-color');
+    redrawCurrentLine();
+  });
+});
+
+drawToggleBtn.addEventListener('click', function() {
+  drawMode = !drawMode;
+  if (drawMode) { setEraseMode(false); }
+  drawToggleBtn.classList.toggle('active', drawMode);
+  drawPanel.classList.toggle('open', drawMode);
+  mapEl.style.cursor = drawMode ? 'crosshair' : '';
+  if (drawMode) {
+    map.dragging.disable();
+  } else if (currentRotation === 0 && !eraseMode) {
+    map.dragging.enable();
+  }
+});
+
+const eraseToggleBtn = document.getElementById('eraseToggleBtn');
+const eraseHint = document.getElementById('eraseHint');
+
+function setEraseMode(on) {
+  eraseMode = on;
+  eraseToggleBtn.textContent = eraseMode ? '🧹 Sair do modo apagar' : '🧹 Ativar modo apagar';
+  eraseToggleBtn.style.background = eraseMode ? '#b83227' : '#fbe4e0';
+  eraseToggleBtn.style.color = eraseMode ? '#ffffff' : '#b83227';
+  eraseHint.style.display = eraseMode ? 'block' : 'none';
+  mapEl.style.cursor = eraseMode ? 'crosshair' : (drawMode ? 'crosshair' : '');
+  if (eraseMode) {
+    drawMode = false;
+    drawToggleBtn.classList.remove('active');
+    clearCurrentLine();
+    map.dragging.disable();
+  } else if (currentRotation === 0 && !drawMode) {
+    map.dragging.enable();
+  }
+}
+
+eraseToggleBtn.addEventListener('click', function() {
+  setEraseMode(!eraseMode);
+});
+
+map.on('click', function(e) {
+  if (!drawMode) return;
+  currentPoints.push(e.latlng);
+  const vm = L.circleMarker(e.latlng, {
+    radius: 4, fillColor: selectedColor, color: '#ffffff', weight: 1.5, fillOpacity: 1
+  }).addTo(map);
+  currentVertexMarkers.push(vm);
+  redrawCurrentLine();
+});
+
+function redrawCurrentLine() {
+  if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; }
+  if (currentPoints.length < 2) return;
+  currentPolyline = L.polyline(currentPoints, {
+    color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
+  }).addTo(map);
+}
+
+function clearCurrentLine() {
+  if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; }
+  currentVertexMarkers.forEach(function(m) { map.removeLayer(m); });
+  currentVertexMarkers = [];
+  currentPoints = [];
+}
+
+document.getElementById('undoPointBtn').addEventListener('click', function() {
+  if (currentPoints.length === 0) return;
+  currentPoints.pop();
+  const last = currentVertexMarkers.pop();
+  if (last) map.removeLayer(last);
+  redrawCurrentLine();
+});
+
+document.getElementById('cancelLineBtn').addEventListener('click', clearCurrentLine);
+
+document.getElementById('finishLineBtn').addEventListener('click', function() {
+  if (currentPoints.length < 2) return;
+  const label = drawLabelInput.value.trim() || 'Marcação';
+  const finalPolyline = L.polyline(currentPoints, {
+    color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
+  }).addTo(map);
+
+  const routeId = ++routeIdCounter;
+  finalPolyline.on('click', function() {
+    if (eraseMode) { deleteRoute(routeId); }
+  });
+  finalPolyline.bindPopup(popupContentFor(label, routeId));
+  savedRoutes.push({ id: routeId, label: label, color: selectedColor, polyline: finalPolyline });
+
+  currentVertexMarkers.forEach(function(m) { map.removeLayer(m); });
+  currentVertexMarkers = [];
+  currentPoints = [];
+  if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; }
+
+  renderRoutesList();
+});
+
+function renderRoutesList() {
+  routesListEl.innerHTML = '';
+  if (savedRoutes.length === 0) {
+    routesListEl.innerHTML = '<div style="color:#999; font-size:11.5px;">Nenhuma marcação salva ainda.</div>';
+    return;
+  }
+  routesListEl.innerHTML = '<div style="font-size:10.5px; color:#888; margin-bottom:6px;">' +
+    savedRoutes.length + ' marcação(ões) salva(s). Dica: ative o "modo apagar" e clique direto na linha no mapa.</div>';
+  savedRoutes.forEach(function(route) {
+    const item = document.createElement('div');
+    item.className = 'routeItem';
+    item.innerHTML =
+      '<span class="routeDot" style="background:' + route.color + '"></span>' +
+      '<span class="routeName">' + route.label + '</span>' +
+      '<button class="routeDel" data-id="' + route.id + '" title="Remover">✕</button>';
+    routesListEl.appendChild(item);
+  });
+  routesListEl.querySelectorAll('.routeDel').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      deleteRoute(id);
+    });
+  });
+}
+
+document.getElementById('clearAllBtn').addEventListener('click', function() {
+  savedRoutes.forEach(function(r) { map.removeLayer(r.polyline); });
+  savedRoutes = [];
+  clearCurrentLine();
+  renderRoutesList();
+});
+
+// Save the current markings into a fresh copy of this HTML file, so they
+// persist for whoever opens the downloaded file next.
+document.getElementById('saveFileBtn').addEventListener('click', function() {
+  const dataEl = document.getElementById('savedRoutesData');
+  const serialized = savedRoutes.map(function(r) {
+    return {
+      label: r.label,
+      color: r.color,
+      points: r.polyline.getLatLngs().map(function(ll) { return [ll.lat, ll.lng]; })
+    };
+  });
+  dataEl.textContent = JSON.stringify(serialized);
+
+  // Clone the document rather than saving the live DOM directly: Leaflet
+  // fills #map with rendered tiles/paths/markers, and saving that verbatim
+  // would bake in a snapshot that balloons in size every time you save.
+  // The map rebuilds itself from `locais`/`restaurantes`/savedRoutesData
+  // on load anyway, so we clear it out of the saved copy.
+  const docClone = document.documentElement.cloneNode(true);
+  const mapClone = docClone.querySelector('#map');
+  if (mapClone) mapClone.innerHTML = '';
+
+  const htmlSource = '<!DOCTYPE html>\n' + docClone.outerHTML;
+  const blob = new Blob([htmlSource], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mapa_secoes_unificado_df.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const originalText = this.textContent;
+  this.textContent = '✓ Arquivo baixado!';
+  const btn = this;
+  setTimeout(function() { btn.textContent = originalText; }, 2200);
+});
+
+renderRoutesList();
+
+// ---- Isolated "voters by region" button — region electorate + candidate votes ----
+const ELEITORADO_2022 = [
+  { regiao: 'Planaltina', total: 118496, votos: 709 },
+  { regiao: 'Arapoanga', total: 17827, votos: null },
+  { regiao: 'Sobradinho', total: 96396, votos: 441 },
+  { regiao: 'Sobradinho II', total: 29160, votos: 215 },
+  { regiao: 'Fercal', total: 3449, votos: 46 },
+  { regiao: 'Itapoã', total: 20528, votos: 149 },
+  { regiao: 'Varjão', total: 4527, votos: 82 },
+  { regiao: 'São Sebastião', total: 68913, votos: 273 },
+  { regiao: 'Paranoá', total: 56288, votos: 434 }
+];
+
+function fmtNum(n) {
+  return n.toLocaleString('pt-BR');
+}
+
+(function buildVotersPanel() {
+  const listEl = document.getElementById('votersList');
+  let grandTotal = 0;
+  let grandVotes = 0;
+  listEl.innerHTML = ELEITORADO_2022.map(function(r) {
+    grandTotal += r.total;
+    const color = REGION_COLORS[r.regiao] || '#555555';
+    let votesCell;
+    if (r.votos === null) {
+      votesCell = '<span class="num na">incl. Pl.</span>';
+    } else {
+      grandVotes += r.votos;
+      votesCell = '<span class="num votes">' + fmtNum(r.votos) + '</span>';
+    }
+    return '<div class="voterRow">' +
+      '<span class="name"><span class="dot" style="background:' + color + '"></span>' + r.regiao + '</span>' +
+      '<span class="num">' + fmtNum(r.total) + '</span>' +
+      votesCell +
+      '</div>';
+  }).join('');
+  document.getElementById('votersGrandTotal').textContent = fmtNum(grandTotal);
+  document.getElementById('votersGrandTotalVotes').textContent = fmtNum(grandVotes);
+})();
+
+const votersToggleBtn = document.getElementById('votersToggleBtn');
+const votersPanel = document.getElementById('votersPanel');
+votersToggleBtn.addEventListener('click', function() {
+  const open = votersPanel.classList.toggle('open');
+  votersToggleBtn.classList.toggle('active', open);
+});
+</script>
+
+
+
+</body></html>
