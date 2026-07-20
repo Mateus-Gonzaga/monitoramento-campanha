@@ -163,6 +163,37 @@
   }
   #clearAllBtn { color: #b83227; margin-top: 6px; }
 
+  #downloadBtn {
+    background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  }
+  #downloadBtn:hover { background: #e6eef5; }
+
+  #saveModsBtn {
+    background: #2e7d32; color: white; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  }
+  #saveModsBtn:hover { background: #256b2a; }
+
+  #saveModsPanel {
+    position: fixed; top: 64px; right: 10px; z-index: 2999;
+    background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    width: 280px; padding: 14px; display: none; font-size: 12.5px; color: #333;
+  }
+  #saveModsPanel.open { display: block; }
+  #saveModsPanel h3 { font-size: 13.5px; margin: 0 0 8px; color: #1a3a5c; }
+  #saveModsPanel label { font-size: 10px; color: #666; display: block; margin-bottom: 3px; }
+  #saveModsPanel input {
+    width: 100%; padding: 5px 7px; border: 1px solid #ccc; border-radius: 5px;
+    font-size: 11px; margin-bottom: 8px; box-sizing: border-box;
+  }
+  #saveModsPanel .hint { font-size: 9.5px; color: #999; margin: 0 0 10px; line-height: 1.4; }
+  #saveModsSubmitBtn {
+    width: 100%; background: #2e7d32; color: white; border: none; border-radius: 6px;
+    padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  #saveModsStatus { font-size: 10.5px; color: #666; margin: 8px 0 0; line-height: 1.4; }
+
   #votersToggleBtn {
     position: fixed; bottom: 10px; right: 10px; z-index: 3000;
     background: #1a3a5c; color: white; border: none; border-radius: 24px;
@@ -234,23 +265,6 @@
   <p id="eraseHint" style="font-size:10.5px; color:#888; margin:-6px 0 10px; line-height:1.4; display:none;">Modo apagar ativo: clique em qualquer linha do mapa para removê-la na hora.</p>
   <div id="routesList"></div>
   <button id="clearAllBtn" style="width:100%; background:none; border:none; font-size:11.5px; font-weight:600; cursor:pointer;">Limpar todas as marcações</button>
-  <button id="saveFileBtn" style="width:100%; margin-top:10px; background:#1a3a5c; color:white; border:none; border-radius:6px; padding:9px; font-size:12.5px; font-weight:700; cursor:pointer;">💾 Baixar cópia do arquivo</button>
-  <p style="font-size:10.5px; color:#888; margin:6px 0 0; line-height:1.4;">Baixa uma nova cópia deste mapa com suas marcações já gravadas dentro do arquivo.</p>
-
-  <div id="githubPanel" style="margin-top:12px; border-top:1px solid #eee; padding-top:10px;">
-    <button id="githubToggle" style="width:100%; background:#eef2f7; color:#1a3a5c; border:none; border-radius:6px; padding:7px; font-size:11.5px; font-weight:700; cursor:pointer;">🔗 Publicar direto no GitHub</button>
-    <div id="githubForm" style="display:none; margin-top:8px;">
-      <label style="font-size:10px; color:#666; display:block; margin-bottom:3px;">Repositório</label>
-      <input type="text" id="ghRepo" value="Mateus-Gonzaga/monitoramento-campanha" style="width:100%; padding:5px 7px; border:1px solid #ccc; border-radius:5px; font-size:11px; margin-bottom:6px; box-sizing:border-box;">
-      <label style="font-size:10px; color:#666; display:block; margin-bottom:3px;">Arquivo no repositório</label>
-      <input type="text" id="ghPath" value="index.html" style="width:100%; padding:5px 7px; border:1px solid #ccc; border-radius:5px; font-size:11px; margin-bottom:6px; box-sizing:border-box;">
-      <label style="font-size:10px; color:#666; display:block; margin-bottom:3px;">Personal Access Token</label>
-      <input type="password" id="ghToken" placeholder="ghp_..." style="width:100%; padding:5px 7px; border:1px solid #ccc; border-radius:5px; font-size:11px; margin-bottom:6px; box-sizing:border-box;">
-      <p style="font-size:9.5px; color:#999; margin:0 0 8px; line-height:1.4;">O token fica salvo só neste navegador (nunca é enviado a ninguém além do GitHub). Use um token com permissão limitada a este repositório.</p>
-      <button id="ghPublishBtn" style="width:100%; background:#2e7d32; color:white; border:none; border-radius:6px; padding:8px; font-size:12px; font-weight:700; cursor:pointer;">🚀 Publicar agora</button>
-      <p id="ghStatus" style="font-size:10.5px; color:#666; margin:8px 0 0; line-height:1.4;"></p>
-    </div>
-  </div>
 </div>
 
 <div id="header">
@@ -294,9 +308,34 @@
         <button id="rotateReset" title="Resetar rotação">⤾</button>
       </div>
     </div>
-  </div>
+
+    <div class="controlDivider"></div>
+
+    <div class="controlGroup">
+      <span class="controlLabel">Arquivo</span>
+      <button id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia</button>
+    </div>
+
+    <div class="controlDivider"></div>
+
+    <div class="controlGroup">
+      <span class="controlLabel">Publicação</span>
+      <button id="saveModsBtn" title="Salvar modificações no site publicado">💾 Salvar modificações</button>
     </div>
   </div>
+</div>
+
+<div id="saveModsPanel">
+  <h3>Salvar modificações</h3>
+  <label>Repositório</label>
+  <input type="text" id="ghRepo" value="Mateus-Gonzaga/monitoramento-campanha">
+  <label>Arquivo no repositório</label>
+  <input type="text" id="ghPath" value="index.html">
+  <label>Personal Access Token</label>
+  <input type="password" id="ghToken" placeholder="github_pat_...">
+  <p class="hint">O token fica salvo só neste navegador (nunca é enviado a ninguém além do GitHub). Use um token com permissão limitada a este repositório.</p>
+  <button id="saveModsSubmitBtn">💾 Salvar modificações</button>
+  <p id="saveModsStatus"></p>
 </div>
 
 <button id="votersToggleBtn" title="Ver eleitores por região">📊 Eleitores por região</button>
@@ -779,7 +818,7 @@ function buildCleanHtmlSource() {
   return '<!DOCTYPE html>\n' + docClone.outerHTML;
 }
 
-document.getElementById('saveFileBtn').addEventListener('click', function() {
+document.getElementById('downloadBtn').addEventListener('click', function() {
   const htmlSource = buildCleanHtmlSource();
   const blob = new Blob([htmlSource], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
@@ -792,19 +831,19 @@ document.getElementById('saveFileBtn').addEventListener('click', function() {
   URL.revokeObjectURL(url);
 
   const originalText = this.textContent;
-  this.textContent = '✓ Arquivo baixado!';
+  this.textContent = '✓ Baixado!';
   const btn = this;
   setTimeout(function() { btn.textContent = originalText; }, 2200);
 });
 
-// ---- Publish straight to GitHub via the Contents API (no server needed) ----
-const githubToggle = document.getElementById('githubToggle');
-const githubForm = document.getElementById('githubForm');
+// ---- Save modifications straight to GitHub via the Contents API (no server needed) ----
+const saveModsBtn = document.getElementById('saveModsBtn');
+const saveModsPanel = document.getElementById('saveModsPanel');
 const ghRepoInput = document.getElementById('ghRepo');
 const ghPathInput = document.getElementById('ghPath');
 const ghTokenInput = document.getElementById('ghToken');
-const ghStatus = document.getElementById('ghStatus');
-const ghPublishBtn = document.getElementById('ghPublishBtn');
+const saveModsStatus = document.getElementById('saveModsStatus');
+const saveModsSubmitBtn = document.getElementById('saveModsSubmitBtn');
 
 const GH_STORAGE_KEY = 'seceleitorais_gh_token';
 
@@ -812,34 +851,33 @@ const GH_STORAGE_KEY = 'seceleitorais_gh_token';
 const storedToken = localStorage.getItem(GH_STORAGE_KEY);
 if (storedToken) ghTokenInput.value = storedToken;
 
-githubToggle.addEventListener('click', function() {
-  const open = githubForm.style.display !== 'none';
-  githubForm.style.display = open ? 'none' : 'block';
+saveModsBtn.addEventListener('click', function() {
+  saveModsPanel.classList.toggle('open');
 });
 
 function utf8ToBase64(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 
-ghPublishBtn.addEventListener('click', async function() {
+saveModsSubmitBtn.addEventListener('click', async function() {
   const repo = ghRepoInput.value.trim();
   const path = ghPathInput.value.trim();
   const token = ghTokenInput.value.trim();
 
   if (!repo || !path || !token) {
-    ghStatus.textContent = '✗ Preencha repositório, arquivo e token.';
-    ghStatus.style.color = '#b83227';
+    saveModsStatus.textContent = '✗ Preencha repositório, arquivo e token.';
+    saveModsStatus.style.color = '#b83227';
     return;
   }
 
   // Remember the token in this browser so you don't need to paste it again
   localStorage.setItem(GH_STORAGE_KEY, token);
 
-  const originalText = ghPublishBtn.textContent;
-  ghPublishBtn.textContent = 'Publicando...';
-  ghPublishBtn.disabled = true;
-  ghStatus.style.color = '#666';
-  ghStatus.textContent = 'Conectando ao GitHub...';
+  const originalText = saveModsSubmitBtn.textContent;
+  saveModsSubmitBtn.textContent = 'Salvando...';
+  saveModsSubmitBtn.disabled = true;
+  saveModsStatus.style.color = '#666';
+  saveModsStatus.textContent = 'Conectando ao GitHub...';
 
   try {
     const apiUrl = 'https://api.github.com/repos/' + repo + '/contents/' + path;
@@ -878,17 +916,17 @@ ghPublishBtn.addEventListener('click', async function() {
 
     if (!putResp.ok) {
       const errData = await putResp.json().catch(function() { return {}; });
-      throw new Error(errData.message || ('Erro ao publicar (HTTP ' + putResp.status + ')'));
+      throw new Error(errData.message || ('Erro ao salvar (HTTP ' + putResp.status + ')'));
     }
 
-    ghStatus.style.color = '#2e7d32';
-    ghStatus.textContent = '✓ Publicado! O site atualiza em cerca de 1 minuto.';
+    saveModsStatus.style.color = '#2e7d32';
+    saveModsStatus.textContent = '✓ Modificações salvas! O site atualiza em cerca de 1 minuto.';
   } catch (err) {
-    ghStatus.style.color = '#b83227';
-    ghStatus.textContent = '✗ Falhou: ' + err.message;
+    saveModsStatus.style.color = '#b83227';
+    saveModsStatus.textContent = '✗ Falhou: ' + err.message;
   } finally {
-    ghPublishBtn.textContent = originalText;
-    ghPublishBtn.disabled = false;
+    saveModsSubmitBtn.textContent = originalText;
+    saveModsSubmitBtn.disabled = false;
   }
 });
 
