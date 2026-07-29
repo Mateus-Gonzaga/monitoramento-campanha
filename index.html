@@ -495,8 +495,8 @@ locais.forEach(function(loc) {
   const isBloqueado = loc.situacao === 'BLOQUEADO';
   const marker = L.circleMarker([loc.lat, loc.lng], {
     radius: isBloqueado ? 5 : 6,
-    fillColor: isBloqueado ? '#b83227' : '#2e7d32',
-    color: isBloqueado ? '#b83227' : color,
+    fillColor: '#e8590c',
+    color: '#e8590c',
     weight: isBloqueado ? 2 : 2.5,
     fillOpacity: isBloqueado ? 0.35 : 0.9
   }).addTo(map);
