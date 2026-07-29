@@ -2,7 +2,7 @@
 <html lang="pt-BR"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seções Eleitorais — Região Norte</title>
+<title>Monitoramento das Regiões</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -389,7 +389,7 @@
 
 <div id="header">
   <div>
-    <h1>Seções Eleitorais — Região Norte</h1>
+    <h1>Monitoramento das Regiões</h1>
     <p>Norte: Planaltina, Arapoanga, Sobradinho, Sobradinho II, Fercal, Itapoã, Varjão, São Sebastião, Paranoá · Sul/Oeste: Ceilândia, Taguatinga, Samambaia, Gama, Santa Maria, Recanto das Emas, Riacho Fundo, Estrutural, Sol Nascente</p>
   </div>
 
@@ -571,11 +571,44 @@ restaurantes.forEach(function(r) {
 // Famílias apoiadoras (bolinhas azuis) — Samambaia. Endereço em nível de casa/lote
 // não existe no OSM; agrupadas no centro da quadra (QR) com leve espalhamento.
 const apoiadores = [
-  {name: "Antônio Fernandes da Silva", sexo: "Masculino", quadra: "QR 412", address: "QR 412 conj 21 casa 4", lat: -15.8583083, lng: -48.0747543},
-  {name: "Beatriz Martins Porto Borjas", sexo: "Feminino", quadra: "QR 412", address: "QR 412 conjunto 11 casa 30", lat: -15.8589083, lng: -48.0744043},
-  {name: "Elisangela dos Santos", sexo: "Feminino", quadra: "QR 412", address: "QR 412 conj 11 casa 18", lat: -15.8589083, lng: -48.0751043},
-  {name: "Ana Lúcia Alves dos Reis", sexo: "Feminino", quadra: "QR 414", address: "QR 414 conj 16 casa 01", lat: -15.8564384, lng: -48.0721130},
-  {name: "Cipriano Rodrigues", sexo: "Masculino", quadra: "QR 414", address: "QR 414 conj 12 casa 06", lat: -15.8570384, lng: -48.0725130}
+  {"name": "Caroliname Dias de Souza Caitano", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conjunto 3 lote 11", "nota": "", "lat": -15.8930551, "lng": -48.1216961},
+  {"name": "Cintia de Santos Freire", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conjunto 4 lote 32", "nota": "", "lat": -15.892151, "lng": -48.1220806},
+  {"name": "Denise Lima da Silva", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conj 10 lote 28", "nota": "", "lat": -15.8925022, "lng": -48.1232063},
+  {"name": "Euvildenor Martins de Souza", "sexo": "Masculino", "quadra": "QR 123", "address": "QR (s/ no) conj 1 lote 4", "nota": "quadra suposta 123", "lat": -15.8931492, "lng": -48.122106},
+  {"name": "Joana Clemente Barbosa", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conj 12 casa 10", "nota": "", "lat": -15.8936602, "lng": -48.1220256},
+  {"name": "Luiz Bezerra Rodrigues", "sexo": "Masculino", "quadra": "QR 123", "address": "QR 123 conj 3 lote 19", "nota": "", "lat": -15.8923774, "lng": -48.1226936},
+  {"name": "Maria Patrícia de Araújo Lisboa", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conj 3 casa 2", "nota": "", "lat": -15.8932155, "lng": -48.1230232},
+  {"name": "Maria de Lourdes Souza", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conj (s/ no)", "nota": "", "lat": -15.892847, "lng": -48.1227938},
+  {"name": "Robson Marcos Farias Feitosa", "sexo": "Masculino", "quadra": "QR 123", "address": "QR 123 conj 1 casa 9", "nota": "", "lat": -15.8925917, "lng": -48.1219627},
+  {"name": "Selma dos Santos Santana", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conjunto 3 lote 8", "nota": "", "lat": -15.8934154, "lng": -48.1224566},
+  {"name": "Waleska Felipe de Faria", "sexo": "Feminino", "quadra": "QR 123", "address": "QR 123 conj 1 casa 6", "nota": "", "lat": -15.8925837, "lng": -48.1223588},
+  {"name": "Almeida Neto", "sexo": "Masculino", "quadra": "QR 307", "address": "QR 307 conj 15 casa 04", "nota": "", "lat": -15.8864519, "lng": -48.0974193},
+  {"name": "Marlene Alves dos Reis", "sexo": "Feminino", "quadra": "QR 307", "address": "QR 307 conj 13 casa 15", "nota": "", "lat": -15.8861497, "lng": -48.0981071},
+  {"name": "Raimundo Nonato de Aquino", "sexo": "Feminino", "quadra": "QR 307", "address": "QR 307 conj 14 lote 14", "nota": "", "lat": -15.8858864, "lng": -48.0976721},
+  {"name": "Danúbia Moreira Costa", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conjunto 4 lote 5", "nota": "quadra estimada", "lat": -15.8910297, "lng": -48.1061436},
+  {"name": "Davison Eduardo Soares de Mendonça", "sexo": "Masculino", "quadra": "QR 315", "address": "QR 315 conj 6 lote 38", "nota": "quadra estimada", "lat": -15.8898717, "lng": -48.1073243},
+  {"name": "Edon Lorenci dos Santos", "sexo": "Masculino", "quadra": "QR 315", "address": "QR 315 conj 9 casa 26", "nota": "quadra estimada", "lat": -15.8893742, "lng": -48.1066777},
+  {"name": "Euriana Ferreira dos Santos", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 1 casa 20", "nota": "quadra estimada", "lat": -15.8897469, "lng": -48.1068116},
+  {"name": "Ismael da Silva Roy", "sexo": "Masculino", "quadra": "QR 315", "address": "QR 315 conj 7 lote 12", "nota": "quadra estimada", "lat": -15.8910319, "lng": -48.106946},
+  {"name": "Jandira Gomes de Sá", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conjunto 6 casa 7", "nota": "quadra estimada", "lat": -15.890585, "lng": -48.1071412},
+  {"name": "Josineide Nogueira da Silva", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conjunto 5 lote 05", "nota": "quadra estimada", "lat": -15.8907849, "lng": -48.1065746},
+  {"name": "Katleyn Eduarda dos Santos Gomes", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 5 casa 21", "nota": "quadra estimada", "lat": -15.8899612, "lng": -48.1060807},
+  {"name": "Lisia Santos Pereira", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 10 casa 11", "nota": "quadra estimada", "lat": -15.8902165, "lng": -48.1069118},
+  {"name": "Lucia Alves Santana", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conjunto 10 casa 13", "nota": "quadra estimada", "lat": -15.8905187, "lng": -48.106224},
+  {"name": "Maria Laert da Conceição", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 02 casa 27", "nota": "quadra estimada", "lat": -15.8895205, "lng": -48.1061986},
+  {"name": "Maria de Lurde Soares", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conjunto 1 lote 4", "nota": "quadra estimada", "lat": -15.8904246, "lng": -48.1058141},
+  {"name": "Maria do Amparo Gomes", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 10 lote 22", "nota": "quadra estimada", "lat": -15.8899532, "lng": -48.1064768},
+  {"name": "Valda Pereira de Oliveira", "sexo": "Feminino", "quadra": "QR 315", "address": "QR 315 conj 7 casa 27", "nota": "quadra estimada", "lat": -15.8899839, "lng": -48.1055839},
+  {"name": "Rosinha Santos", "sexo": "Feminino", "quadra": "QR 317", "address": "QR 317 conj 3 casa 07", "nota": "", "lat": -15.8912699, "lng": -48.108678},
+  {"name": "Antônio Fernandes da Silva", "sexo": "Masculino", "quadra": "QR 412", "address": "QR 412 conj 21 casa 4", "nota": "", "lat": -15.8589738, "lng": -48.0745015},
+  {"name": "Beatriz Martins Porto Borjas", "sexo": "Feminino", "quadra": "QR 412", "address": "QR 412 conjunto 11 casa 30", "nota": "", "lat": -15.8586716, "lng": -48.0751892},
+  {"name": "Elisangela dos Santos", "sexo": "Feminino", "quadra": "QR 412", "address": "QR 412 conj 11 casa 18", "nota": "", "lat": -15.8584163, "lng": -48.0743583},
+  {"name": "Girlene dos Santos Silva", "sexo": "Feminino", "quadra": "QR 412", "address": "QR 412 conjunto 17 casa 3", "nota": "", "lat": -15.8584083, "lng": -48.0747543},
+  {"name": "Ana Lúcia Alves dos Reis", "sexo": "Feminino", "quadra": "QR 414", "address": "QR 414 conj 16 casa 01", "nota": "", "lat": -15.8564384, "lng": -48.072313},
+  {"name": "Cipriano Rodrigues", "sexo": "Masculino", "quadra": "QR 414", "address": "QR 414 conj 12 casa 06", "nota": "", "lat": -15.8570039, "lng": -48.0720602},
+  {"name": "Luis Gonzaga", "sexo": "Masculino", "quadra": "QR 505", "address": "QR 505 conj 8 casa 7", "nota": "", "lat": -15.8902962, "lng": -48.0940383},
+  {"name": "Marli Ferreira de Freitas", "sexo": "Feminino", "quadra": "QR 509", "address": "QR 509 conj 3 lote 1", "nota": "", "lat": -15.8920416, "lng": -48.099055},
+  {"name": "Moisés Nogueira da Silva", "sexo": "Masculino", "quadra": "QR 509", "address": "QR 509 conjunto 4 lote 5", "nota": "", "lat": -15.8914761, "lng": -48.0993078}
 ];
 
 apoiadores.forEach(function(a) {
@@ -590,7 +623,8 @@ apoiadores.forEach(function(a) {
   marker.bindPopup(
     '<b>' + a.name + '</b><span class="badge badge-apoiador">FAMÍLIA APOIADORA</span>' +
     '<br>' + a.address + ' · ' + a.sexo +
-    '<br><span style="font-size:10px;color:#999">📍 posição aproximada (centro da ' + a.quadra + ')</span>'
+    '<br><span style="font-size:10px;color:#999">📍 posição aproximada (centro da ' + a.quadra + ')' +
+    (a.nota ? ' — ' + a.nota : '') + '</span>'
   );
 
   marker.bindTooltip('💙 ' + a.name.split(' ')[0], {
@@ -1473,7 +1507,16 @@ const ELEITORADO_2022 = [
   { regiao: 'Itapoã', total: 20528, votos: 149 },
   { regiao: 'Varjão', total: 4527, votos: 82 },
   { regiao: 'São Sebastião', total: 68913, votos: 273 },
-  { regiao: 'Paranoá', total: 56288, votos: 434 }
+  { regiao: 'Paranoá', total: 56288, votos: 434 },
+  { regiao: 'Ceilândia', total: null, votos: null },
+  { regiao: 'Taguatinga', total: null, votos: null },
+  { regiao: 'Samambaia', total: null, votos: null },
+  { regiao: 'Gama', total: null, votos: null },
+  { regiao: 'Santa Maria', total: null, votos: null },
+  { regiao: 'Recanto das Emas', total: null, votos: null },
+  { regiao: 'Riacho Fundo', total: null, votos: null },
+  { regiao: 'Estrutural', total: null, votos: null },
+  { regiao: 'Sol Nascente', total: null, votos: null }
 ];
 
 function fmtNum(n) {
