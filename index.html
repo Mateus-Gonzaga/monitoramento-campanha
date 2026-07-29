@@ -108,6 +108,21 @@
   }
   .leaflet-tooltip-top.restaurant-label::before { border-top-color: #e8590c; }
 
+  .apoiador-label {
+    background: #e8f0fb;
+    border: 1.5px solid #1565c0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 800;
+    color: #0d3d7a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    white-space: nowrap;
+    line-height: 12px;
+  }
+  .leaflet-tooltip-top.apoiador-label::before { border-top-color: #1565c0; }
+  .badge-apoiador { background:#e3ecfb; color:#1565c0; }
+
   .onda-endpoint-label {
     background: #1565c0;
     color: #ffffff;
@@ -379,7 +394,7 @@
   </div>
 
   <div id="legend">
-    <span><span class="dot" style="background:#2e7d32; border:2px solid #1a6fb0"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #e53935"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #3949ab"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span>
+    <span><span class="dot" style="background:#2e7d32; border:2px solid #1a6fb0"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #e53935"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #3949ab"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span>
   </div>
 
   <div class="controlsBar">
@@ -551,6 +566,41 @@ restaurantes.forEach(function(r) {
   });
 
   bounds.push([r.lat, r.lng]);
+});
+
+// Famílias apoiadoras (bolinhas azuis) — Samambaia. Endereço em nível de casa/lote
+// não existe no OSM; agrupadas no centro da quadra (QR) com leve espalhamento.
+const apoiadores = [
+  {name: "Antônio Fernandes da Silva", sexo: "Masculino", quadra: "QR 412", address: "QR 412 conj 21 casa 4", lat: -15.8583083, lng: -48.0747543},
+  {name: "Beatriz Martins Porto Borjas", sexo: "Feminino", quadra: "QR 412", address: "QR 412 conjunto 11 casa 30", lat: -15.8589083, lng: -48.0744043},
+  {name: "Elisangela dos Santos", sexo: "Feminino", quadra: "QR 412", address: "QR 412 conj 11 casa 18", lat: -15.8589083, lng: -48.0751043},
+  {name: "Ana Lúcia Alves dos Reis", sexo: "Feminino", quadra: "QR 414", address: "QR 414 conj 16 casa 01", lat: -15.8564384, lng: -48.0721130},
+  {name: "Cipriano Rodrigues", sexo: "Masculino", quadra: "QR 414", address: "QR 414 conj 12 casa 06", lat: -15.8570384, lng: -48.0725130}
+];
+
+apoiadores.forEach(function(a) {
+  const marker = L.circleMarker([a.lat, a.lng], {
+    radius: 7,
+    fillColor: '#1565c0',
+    color: '#ffffff',
+    weight: 2,
+    fillOpacity: 0.95
+  }).addTo(map);
+
+  marker.bindPopup(
+    '<b>' + a.name + '</b><span class="badge badge-apoiador">FAMÍLIA APOIADORA</span>' +
+    '<br>' + a.address + ' · ' + a.sexo +
+    '<br><span style="font-size:10px;color:#999">📍 posição aproximada (centro da ' + a.quadra + ')</span>'
+  );
+
+  marker.bindTooltip('💙 ' + a.name.split(' ')[0], {
+    permanent: true,
+    direction: 'top',
+    offset: [0, -8],
+    className: 'apoiador-label'
+  });
+
+  bounds.push([a.lat, a.lng]);
 });
 
 map.fitBounds(bounds, { padding: [30, 30] });
