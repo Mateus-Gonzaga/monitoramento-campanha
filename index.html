@@ -34,6 +34,12 @@
     color: #7fa0c2; font-weight: 700; margin-right: 1px;
   }
   .controlDivider { width: 1px; height: 22px; background: rgba(255,255,255,0.16); }
+  #layerFilters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #layerFilters label {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+    font-weight: 600; color: #dbe7f3; cursor: pointer; white-space: nowrap;
+  }
+  #layerFilters input { accent-color: #4a90d9; cursor: pointer; margin: 0; }
   #toggleBtn {
     background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
     padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer;
@@ -407,6 +413,19 @@
     <div class="controlDivider"></div>
 
     <div class="controlGroup">
+      <span class="controlLabel">Camadas</span>
+      <div id="layerFilters">
+        <label><input type="checkbox" id="fltSecoes" checked> Seções</label>
+        <label><input type="checkbox" id="fltRest" checked> Restaurantes</label>
+        <label><input type="checkbox" id="fltFam" checked> Famílias</label>
+        <label><input type="checkbox" id="fltOnda" checked> Onda Azul</label>
+        <label><input type="checkbox" id="fltFotos" checked> Fotos</label>
+      </div>
+    </div>
+
+    <div class="controlDivider"></div>
+
+    <div class="controlGroup">
       <span class="controlLabel">Zoom</span>
       <div id="zoomGroup">
         <button id="zoomOut" title="Diminuir zoom">−</button>
@@ -489,7 +508,7 @@ const locais = [{"name": "Caic Assis Chateaubriand", "short": "Caic Assis Chatea
 const REGION_COLORS = {"Planaltina": "#1a6fb0", "Arapoanga": "#c99a1e", "Sobradinho": "#2e9e6b", "Sobradinho II": "#5ec9a0", "Fercal": "#8c5ec2", "Itapoã": "#0e8f8f", "Varjão": "#d98a1f", "São Sebastião": "#c9376b", "Paranoá": "#7b4b94", "Samambaia": "#e53935", "Taguatinga": "#3949ab", "Gama": "#00acc1", "Santa Maria": "#7cb342", "Estrutural": "#6d4c41", "Sol Nascente": "#f4511e", "Ceilândia": "#8e24aa", "Recanto das Emas": "#c0ca33", "Riacho Fundo": "#00838f"};
 const ZOOM_LABEL_THRESHOLD = 14;
 
-const map = L.map('map', { zoomControl: false, zoomSnap: 0.1, zoomDelta: 1 }).setView([-15.72, -47.68], 10);
+const map = L.map('map', { zoomControl: false, zoomSnap: 0.1, zoomDelta: 1, preferCanvas: true }).setView([-15.72, -47.68], 10);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -505,6 +524,13 @@ const markers = [];
 let userForcedHidden = false;
 let userForcedShown = false;
 
+// Camadas filtráveis por tipo de elemento (ligar/desligar no painel "Camadas")
+const secoesLayer = L.layerGroup().addTo(map);
+const restaurantesLayer = L.layerGroup().addTo(map);
+const familiasLayer = L.layerGroup().addTo(map);
+const ondaLayer = L.layerGroup().addTo(map);
+const fotosLayer = L.layerGroup().addTo(map);
+
 locais.forEach(function(loc) {
   const color = colorFor(loc);
   const isBloqueado = loc.situacao === 'BLOQUEADO';
@@ -514,7 +540,7 @@ locais.forEach(function(loc) {
     color: '#e8590c',
     weight: isBloqueado ? 2 : 2.5,
     fillOpacity: isBloqueado ? 0.35 : 0.9
-  }).addTo(map);
+  }).addTo(secoesLayer);
 
   let badges = '<span class="badge badge-regiao">' + loc.regiao + '</span>';
   badges += isBloqueado
@@ -551,7 +577,7 @@ const restaurantIcon = L.icon({
 });
 
 restaurantes.forEach(function(r) {
-  const marker = L.marker([r.lat, r.lng], { icon: restaurantIcon }).addTo(map);
+  const marker = L.marker([r.lat, r.lng], { icon: restaurantIcon }).addTo(restaurantesLayer);
 
   marker.bindPopup(
     '<b>' + r.name + '</b><span class="badge badge-restaurante">RESTAURANTE COMUNITÁRIO</span>' +
@@ -618,7 +644,7 @@ apoiadores.forEach(function(a) {
     color: '#ffffff',
     weight: 2,
     fillOpacity: 0.95
-  }).addTo(map);
+  }).addTo(familiasLayer);
 
   marker.bindPopup(
     '<b>' + a.name + '</b><span class="badge badge-apoiador">FAMÍLIA APOIADORA</span>' +
@@ -721,6 +747,22 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
   });
   if (labelsVisible) layoutLabels();
   this.textContent = labelsVisible ? 'Ocultar títulos' : 'Mostrar títulos';
+});
+
+// Filtro de camadas: liga/desliga cada tipo de elemento
+[['fltSecoes', secoesLayer], ['fltRest', restaurantesLayer], ['fltFam', familiasLayer],
+ ['fltOnda', ondaLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
+  const el = document.getElementById(pair[0]);
+  const layer = pair[1];
+  if (!el) return;
+  el.addEventListener('change', function() {
+    if (el.checked) {
+      map.addLayer(layer);
+      if (layer === secoesLayer) updateLabelsByZoom();
+    } else {
+      map.removeLayer(layer);
+    }
+  });
 });
 
 // Rotate the map view
@@ -887,7 +929,7 @@ window.__saveRouteEdit = function(id) {
 
     // Rebuild the endpoint labels on the map
     if (route.endpointLabels) {
-      route.endpointLabels.forEach(function(l) { map.removeLayer(l); });
+      route.endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
     }
     const latlngs = route.polyline.getLatLngs();
     route.endpointLabels = addOndaEndpointLabels(latlngs, route.startLabel, route.endLabel);
@@ -902,13 +944,13 @@ window.__saveRouteEdit = function(id) {
 function addOndaEndpointLabels(latlngs, startText, endText) {
   const labels = [];
   if (startText) {
-    const m = L.marker(latlngs[0], { opacity: 0, interactive: false }).addTo(map);
+    const m = L.marker(latlngs[0], { opacity: 0, interactive: false }).addTo(ondaLayer);
     m.bindTooltip(startText, { permanent: true, direction: 'left', className: 'onda-endpoint-label', offset: [-4, 0] });
     m.openTooltip();
     labels.push(m);
   }
   if (endText) {
-    const m = L.marker(latlngs[latlngs.length - 1], { opacity: 0, interactive: false }).addTo(map);
+    const m = L.marker(latlngs[latlngs.length - 1], { opacity: 0, interactive: false }).addTo(ondaLayer);
     m.bindTooltip(endText, { permanent: true, direction: 'right', className: 'onda-endpoint-label', offset: [4, 0] });
     m.openTooltip();
     labels.push(m);
@@ -919,9 +961,9 @@ function addOndaEndpointLabels(latlngs, startText, endText) {
 function deleteRoute(id) {
   const idx = savedRoutes.findIndex(function(r) { return r.id === id; });
   if (idx < 0) return;
-  map.removeLayer(savedRoutes[idx].polyline);
+  ondaLayer.removeLayer(savedRoutes[idx].polyline);
   if (savedRoutes[idx].endpointLabels) {
-    savedRoutes[idx].endpointLabels.forEach(function(l) { map.removeLayer(l); });
+    savedRoutes[idx].endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
   }
   savedRoutes.splice(idx, 1);
   renderRoutesList();
@@ -942,7 +984,7 @@ window.__deleteRouteFromPopup = deleteRoute;
     const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
     const polyline = L.polyline(latlngs, {
       color: r.color, weight: 4, dashArray: '9,7', opacity: 0.9
-    }).addTo(map);
+    }).addTo(ondaLayer);
     routeIdCounter++;
     const id = routeIdCounter;
     polyline.on('click', function() {
@@ -1052,7 +1094,7 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
   const label = drawLabelInput.value.trim() || 'Marcação';
   const finalPolyline = L.polyline(currentPoints, {
     color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
-  }).addTo(map);
+  }).addTo(ondaLayer);
 
   const routeId = ++routeIdCounter;
   finalPolyline.on('click', function() {
@@ -1111,7 +1153,10 @@ function renderRoutesList() {
 }
 
 document.getElementById('clearAllBtn').addEventListener('click', function() {
-  savedRoutes.forEach(function(r) { map.removeLayer(r.polyline); });
+  savedRoutes.forEach(function(r) {
+    ondaLayer.removeLayer(r.polyline);
+    if (r.endpointLabels) r.endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
+  });
   savedRoutes = [];
   clearCurrentLine();
   renderRoutesList();
@@ -1364,7 +1409,7 @@ function buildPhotoIcon(dataUrl) {
 }
 
 function addPhotoMarkerToMap(entry) {
-  const marker = L.marker([entry.lat, entry.lng], { icon: buildPhotoIcon(entry.photo) }).addTo(map);
+  const marker = L.marker([entry.lat, entry.lng], { icon: buildPhotoIcon(entry.photo) }).addTo(fotosLayer);
 
   marker.bindTooltip(
     '<div class="photo-tooltip-inner"><img src="' + entry.photo + '">' +
@@ -1385,7 +1430,7 @@ function addPhotoMarkerToMap(entry) {
 window.__deletePhotoMarker = function(id) {
   const idx = photoMarkers.findIndex(function(p) { return p.id === id; });
   if (idx < 0) return;
-  map.removeLayer(photoMarkers[idx].marker);
+  fotosLayer.removeLayer(photoMarkers[idx].marker);
   photoMarkers.splice(idx, 1);
   renderPhotoMarkersList();
 };
@@ -1491,7 +1536,7 @@ map.on('click', function(e) {
 });
 
 document.getElementById('clearAllPhotosBtn').addEventListener('click', function() {
-  photoMarkers.forEach(function(p) { map.removeLayer(p.marker); });
+  photoMarkers.forEach(function(p) { fotosLayer.removeLayer(p.marker); });
   photoMarkers = [];
   renderPhotoMarkersList();
 });
