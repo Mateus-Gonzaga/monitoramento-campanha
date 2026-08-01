@@ -128,6 +128,13 @@
   }
   .leaflet-tooltip-top.apoiador-label::before { border-top-color: #1565c0; }
   .badge-apoiador { background:#e3ecfb; color:#1565c0; }
+  .navlinks { margin-top: 9px; display: flex; gap: 7px; }
+  .navlinks a {
+    flex: 1; text-align: center; text-decoration: none; font-size: 11.5px;
+    font-weight: 700; padding: 6px 8px; border-radius: 6px;
+    background: #eef2f7; color: #1a3a5c; white-space: nowrap;
+  }
+  .navlinks a:hover { background: #dde6f0; }
 
   .onda-endpoint-label {
     background: #1565c0;
@@ -535,6 +542,16 @@ const fotosLayer = L.layerGroup().addTo(map);
 // cada item: { m: marker, z: zoom mínimo para exibir o rótulo }
 const poiMarkers = [];
 
+// Links para abrir a localização exata no Google Maps / Waze (usa as coordenadas)
+function linksNavegacao(lat, lng) {
+  const g = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
+  const w = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+  return '<div class="navlinks">' +
+    '<a href="' + g + '" target="_blank" rel="noopener">📍 Maps</a>' +
+    '<a href="' + w + '" target="_blank" rel="noopener">🚗 Waze</a>' +
+    '</div>';
+}
+
 locais.forEach(function(loc) {
   // Ignora coordenadas inválidas (ex.: falha de geocodificação = -1,-1)
   if (!(loc.lat < -14 && loc.lat > -17 && loc.lng < -46 && loc.lng > -49)) return;
@@ -555,7 +572,8 @@ locais.forEach(function(loc) {
 
   marker.bindPopup(
     '<b>' + loc.name + '</b>' + badges +
-    '<br>' + loc.address
+    '<br>' + loc.address +
+    linksNavegacao(loc.lat, loc.lng)
   );
 
   if (!isBloqueado) {
@@ -587,7 +605,8 @@ restaurantes.forEach(function(r) {
 
   marker.bindPopup(
     '<b>' + r.name + '</b><span class="badge badge-restaurante">RESTAURANTE COMUNITÁRIO</span>' +
-    '<br>' + r.address
+    '<br>' + r.address +
+    linksNavegacao(r.lat, r.lng)
   );
 
   marker.bindTooltip('🍽 ' + r.short, {
@@ -657,7 +676,8 @@ apoiadores.forEach(function(a) {
     '<b>' + a.name + '</b><span class="badge badge-apoiador">FAMÍLIA APOIADORA</span>' +
     '<br>' + a.address + ' · ' + a.sexo +
     '<br><span style="font-size:10px;color:#999">📍 posição aproximada (centro da ' + a.quadra + ')' +
-    (a.nota ? ' — ' + a.nota : '') + '</span>'
+    (a.nota ? ' — ' + a.nota : '') + '</span>' +
+    linksNavegacao(a.lat, a.lng)
   );
 
   marker.bindTooltip('💙 ' + a.name.split(' ')[0], {
