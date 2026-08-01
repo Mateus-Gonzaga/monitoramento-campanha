@@ -912,6 +912,10 @@ function popupContentFor(label, id) {
     html += '<div style="font-size:11px;color:#1565c0;margin-top:2px;">' +
       '🌊 Início: ' + (route.startLabel || '—') + '<br>🌊 Fim: ' + (route.endLabel || '—') + '</div>';
   }
+  if (route && route.polyline) {
+    const p0 = route.polyline.getLatLngs()[0];
+    if (p0) html += linksNavegacao(p0.lat, p0.lng);
+  }
   html += '<br><button onclick="window.__editRouteFromPopup(' + id + ')" ' +
     'style="margin-top:6px;background:#1a3a5c;color:white;border:none;border-radius:5px;' +
     'padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">✏️ Editar títulos</button> ' +
@@ -1464,6 +1468,7 @@ function addPhotoMarkerToMap(entry) {
   marker.bindPopup(
     '<div class="photo-popup-inner"><img src="' + entry.photo + '">' +
     (entry.label ? '<div style="font-weight:700; color:#1a3a5c; margin-bottom:6px;">' + entry.label + '</div>' : '') +
+    linksNavegacao(entry.lat, entry.lng) +
     '<button class="photoRemoveBtn" onclick="window.__deletePhotoMarker(' + entry.id + ')">🗑 Remover</button></div>'
   );
 
