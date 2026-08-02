@@ -5,6 +5,20 @@
 <title>Monitoramento das Regiões</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ---- Configuração do Supabase (a chave "anon" é pública, pode ficar no código) ----
+const SUPABASE_URL = 'https://fsrxpejiictbczixvsrm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcnhwZWppaWN0YmN6aXh2c3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyODIzNDgsImV4cCI6MjEwMDg1ODM0OH0.8rPpind59AQaVt0bNU-dqIjZAxx0J3JtTe3Jl1kakZA';
+const SUPABASE_BUCKET = 'fotos';
+// Trava do login: false = site público (comportamento atual, sem parede de login);
+// true = exige login Google. Só vire para true DEPOIS de configurar o Supabase
+// (rodar o schema + ativar o Google + colocar seu e-mail na allowlist como super_admin).
+const LOGIN_ATIVO = false;
+const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+</script>
 <style>
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -135,6 +149,41 @@
     background: #eef2f7; color: #1a3a5c; white-space: nowrap;
   }
   .navlinks a:hover { background: #dde6f0; }
+  /* ---- Telas de autenticação (login / não autorizado / carregando) ---- */
+  #authOverlay {
+    position: fixed; inset: 0; z-index: 5000;
+    background: linear-gradient(135deg, #1a3a5c 0%, #14293f 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #authOverlay .authCard {
+    background: #fff; border-radius: 14px; padding: 34px 30px;
+    width: min(92vw, 380px); box-shadow: 0 20px 60px rgba(0,0,0,0.35); text-align: center;
+  }
+  #authOverlay h2 { margin: 0 0 6px; font-size: 19px; color: #1a3a5c; }
+  #authOverlay p { margin: 0 0 20px; font-size: 13px; color: #667; line-height: 1.5; }
+  #authOverlay .gbtn {
+    display: inline-flex; align-items: center; gap: 10px; justify-content: center;
+    width: 100%; padding: 11px 16px; border: 1px solid #dadce0; border-radius: 8px;
+    background: #fff; color: #3c4043; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  #authOverlay .gbtn:hover { background: #f7f8f8; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  #authOverlay .gicon { width: 18px; height: 18px; }
+  #authOverlay .authErr { color: #b83227; font-size: 12.5px; margin-top: 14px; min-height: 16px; }
+  #authOverlay .linkBtn { background: none; border: none; color: #888; font-size: 12px; cursor: pointer; margin-top: 16px; text-decoration: underline; }
+  #authOverlay .spinner {
+    width: 34px; height: 34px; margin: 6px auto 18px; border: 3px solid #dbe4ee;
+    border-top-color: #1a3a5c; border-radius: 50%; animation: authspin 0.8s linear infinite;
+  }
+  @keyframes authspin { to { transform: rotate(360deg); } }
+  body.authed #authOverlay { display: none; }
+  /* Enquanto não autenticado, esconde a interface do mapa por baixo */
+  body:not(.authed) #headerToggle,
+  body:not(.authed) #drawToggleBtn,
+  body:not(.authed) #photoToggleBtn,
+  body:not(.authed) #votersToggleBtn,
+  body:not(.authed) #header { visibility: hidden; }
+  #accountGroup .accEmail { font-weight: 700; color: #dbe7f3; font-size: 11.5px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #accLogoutBtn { cursor: pointer; }
 
   .onda-endpoint-label {
     background: #1565c0;
@@ -356,6 +405,29 @@
 </head>
 <body class="">
 
+<div id="authOverlay">
+  <div class="authCard">
+    <div id="authLoading">
+      <div class="spinner"></div>
+      <p>Verificando acesso…</p>
+    </div>
+    <div id="authLogin" style="display:none;">
+      <h2>Monitoramento das Regiões</h2>
+      <p>Acesso restrito à equipe. Entre com sua conta Google autorizada.</p>
+      <button class="gbtn" id="googleLoginBtn">
+        <svg class="gicon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Entrar com Google
+      </button>
+      <p class="authErr" id="authLoginErr"></p>
+    </div>
+    <div id="authDenied" style="display:none;">
+      <h2>Acesso não autorizado</h2>
+      <p>Sua conta <b id="deniedEmail"></b> não está na lista de membros aprovados. Fale com um administrador do projeto.</p>
+      <button class="linkBtn" id="authLogoutBtn">Sair e trocar de conta</button>
+    </div>
+  </div>
+</div>
+
 <button id="headerToggle" title="Ocultar menu">▲</button>
 
 <button id="drawToggleBtn" title="Marcar ruas no mapa">✏️ Marcar ruas</button>
@@ -467,6 +539,14 @@
     <div class="controlGroup">
       <span class="controlLabel">Publicação</span>
       <button id="saveModsBtn" title="Salvar modificações no site publicado">💾 Salvar modificações</button>
+    </div>
+
+    <div class="controlDivider" id="accountDivider" style="display:none;"></div>
+
+    <div class="controlGroup" id="accountGroup" style="display:none;">
+      <span class="controlLabel">Conta</span>
+      <span class="accEmail" id="accEmail"></span>
+      <button id="accLogoutBtn" title="Sair da conta">Sair</button>
     </div>
   </div>
 </div>
@@ -1614,7 +1694,7 @@ const ELEITORADO_2022 = [
 ];
 
 function fmtNum(n) {
-  return n.toLocaleString('pt-BR');
+  return (n === null || n === undefined) ? '—' : n.toLocaleString('pt-BR');
 }
 
 (function buildVotersPanel() {
@@ -1647,6 +1727,85 @@ votersToggleBtn.addEventListener('click', function() {
   const open = votersPanel.classList.toggle('open');
   votersToggleBtn.classList.toggle('active', open);
 });
+
+// ============================================================
+//  AUTENTICAÇÃO (login Google + gating por perfil na tabela profiles)
+//  Obs.: por enquanto o login apenas LIBERA a interface. A troca de
+//  salvar/carregar para o banco vem no próximo passo.
+// ============================================================
+const AuthState = { user: null, perfil: null, isSuper: false, editableRegions: [] };
+const authLoading = document.getElementById('authLoading');
+const authLogin = document.getElementById('authLogin');
+const authDenied = document.getElementById('authDenied');
+
+function showAuthState(state) {
+  authLoading.style.display = state === 'loading' ? 'block' : 'none';
+  authLogin.style.display   = state === 'login'   ? 'block' : 'none';
+  authDenied.style.display  = state === 'denied'  ? 'block' : 'none';
+}
+
+document.getElementById('googleLoginBtn').addEventListener('click', async function() {
+  document.getElementById('authLoginErr').textContent = '';
+  const { error } = await SB.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href.split('#')[0] }
+  });
+  if (error) document.getElementById('authLoginErr').textContent = 'Erro ao iniciar login: ' + error.message;
+});
+
+async function doLogout() {
+  if (SB) await SB.auth.signOut();
+  window.location.reload();
+}
+document.getElementById('authLogoutBtn').addEventListener('click', doLogout);
+document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
+
+async function enterApp() {
+  if (document.body.classList.contains('authed')) return;
+  // Perfil só existe se o e-mail estiver na allowlist (trigger cria no 1º login)
+  const { data: perfil, error } = await SB.from('profiles')
+    .select('email, papel, regioes').eq('id', AuthState.user.id).maybeSingle();
+  if (error) {
+    showAuthState('login');
+    document.getElementById('authLoginErr').textContent = 'Erro ao verificar perfil: ' + error.message;
+    return;
+  }
+  if (!perfil) {
+    document.getElementById('deniedEmail').textContent = AuthState.user.email || '';
+    showAuthState('denied');
+    return;
+  }
+  AuthState.perfil = perfil;
+  AuthState.isSuper = perfil.papel === 'super_admin';
+  AuthState.editableRegions = perfil.regioes || [];
+
+  document.getElementById('accEmail').textContent = AuthState.user.email || '';
+  document.getElementById('accEmail').title = AuthState.isSuper
+    ? 'Super admin — todas as regiões'
+    : (AuthState.editableRegions.length ? 'Editor — ' + AuthState.editableRegions.join(', ') : 'Sem região atribuída');
+  document.getElementById('accountGroup').style.display = '';
+  document.getElementById('accountDivider').style.display = '';
+
+  document.body.classList.add('authed');
+  map.invalidateSize();
+}
+
+(async function bootAuth() {
+  // Trava desligada: mantém o site público (esconde o overlay, libera tudo).
+  if (!LOGIN_ATIVO) { document.body.classList.add('authed'); return; }
+  if (!SB) {
+    showAuthState('login');
+    document.getElementById('authLoginErr').textContent = 'Configuração do Supabase ausente.';
+    return;
+  }
+  showAuthState('loading');
+  const { data: { session } } = await SB.auth.getSession();
+  if (session && session.user) { AuthState.user = session.user; await enterApp(); }
+  else { showAuthState('login'); }
+  SB.auth.onAuthStateChange(function(event, sess) {
+    if (event === 'SIGNED_IN' && sess && sess.user) { AuthState.user = sess.user; enterApp(); }
+  });
+})();
 </script>
 
 
