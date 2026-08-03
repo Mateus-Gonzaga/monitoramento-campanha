@@ -412,6 +412,71 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #votersPanel .voterTotal .num.votes { color: #b83227; }
   #votersPanel .voterTotal .totalLabel { flex: 1 1 auto; }
   #votersPanel .voterTotal .num { width: 62px; text-align: right; }
+
+  /* ===================== Polimento dos menus e botões (tema escuro) ===================== */
+  #header {
+    background: linear-gradient(180deg, #204368 0%, #15304b 100%);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+    padding: 13px 22px;
+  }
+  #header h1 { letter-spacing: .2px; }
+  #header p { color: #a8c1da; }
+
+  /* Legenda recolhível */
+  #legendToggle {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.07); color: #cfe0f0;
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 7px;
+    padding: 5px 11px; font-size: 10px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; cursor: pointer; transition: background .15s;
+  }
+  #legendToggle:hover { background: rgba(255,255,255,0.14); }
+  #legendToggle .chev { font-size: 9px; transition: transform .2s; }
+  #legendToggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  #legend { margin-top: 2px; gap: 7px 12px; }
+  #legend.collapsed { display: none; }
+  #legend > span {
+    display: inline-flex; align-items: center;
+    background: rgba(255,255,255,0.06); border-radius: 20px; padding: 3px 10px 3px 6px;
+  }
+
+  /* Barra de controles: mais respiro */
+  .controlsBar { gap: 12px 18px; padding-top: 12px; }
+  .controlLabel { color: #86a6c8; }
+  .controlDivider { height: 24px; background: rgba(255,255,255,0.12); }
+
+  /* Botões claros: transição + leve elevação no hover */
+  #toggleBtn, #zoomGroup button, #rotateGroup button, #downloadBtn, #saveModsBtn {
+    transition: background .15s, transform .1s, box-shadow .15s;
+  }
+  #toggleBtn:hover, #downloadBtn:hover, #saveModsBtn:hover { transform: translateY(-1px); }
+  #toggleBtn:active, #downloadBtn:active, #saveModsBtn:active { transform: translateY(0); }
+
+  /* Filtros (Camadas) como chips */
+  #layerFilters { gap: 7px; }
+  #layerFilters label {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 20px; padding: 4px 11px 4px 8px; transition: background .15s, border-color .15s;
+  }
+  #layerFilters label:hover { background: rgba(255,255,255,0.13); }
+  #layerFilters label:has(input:checked) { background: rgba(74,144,217,0.30); border-color: #4a90d9; color: #fff; }
+
+  /* Botões flutuantes: sombra e elevação */
+  #drawToggleBtn, #photoToggleBtn, #votersToggleBtn {
+    box-shadow: 0 3px 12px rgba(0,0,0,0.32);
+    transition: background .15s, transform .12s, box-shadow .15s; letter-spacing: .2px;
+  }
+  #drawToggleBtn:hover, #photoToggleBtn:hover, #votersToggleBtn:hover {
+    transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  }
+
+  /* Conta: botão Sair discreto */
+  #accLogoutBtn {
+    background: rgba(255,255,255,0.1); color: #dbe7f3;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+    padding: 5px 12px; font-size: 11px; font-weight: 600; transition: background .15s;
+  }
+  #accLogoutBtn:hover { background: rgba(255,255,255,0.18); }
 </style>
 </head>
 <body class="">
@@ -497,7 +562,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <p>Norte: Planaltina, Arapoanga, Sobradinho, Sobradinho II, Fercal, Itapoã, Varjão, São Sebastião, Paranoá · Sul/Oeste: Ceilândia, Taguatinga, Samambaia, Gama, Santa Maria, Recanto das Emas, Riacho Fundo, Estrutural, Sol Nascente</p>
   </div>
 
-  <div id="legend">
+  <button id="legendToggle" type="button" aria-expanded="false">Legenda das regiões <span class="chev">▾</span></button>
+
+  <div id="legend" class="collapsed">
     <span><span class="dot" style="background:#2e7d32; border:2px solid #1a6fb0"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #e53935"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #3949ab"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span>
   </div>
 
@@ -873,6 +940,17 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
     }
   });
 });
+
+// Legenda recolhível
+(function() {
+  const lt = document.getElementById('legendToggle');
+  const lg = document.getElementById('legend');
+  if (!lt || !lg) return;
+  lt.addEventListener('click', function() {
+    const aberta = !lg.classList.toggle('collapsed');
+    lt.setAttribute('aria-expanded', aberta ? 'true' : 'false');
+  });
+})();
 
 // Rotate the map view
 let currentRotation = 0;
