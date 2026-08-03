@@ -14,7 +14,10 @@ const SUPABASE_BUCKET = 'fotos';
 // Trava do login: false = site público (comportamento atual, sem parede de login);
 // true = exige login Google. Só vire para true DEPOIS de configurar o Supabase
 // (rodar o schema + ativar o Google + colocar seu e-mail na allowlist como super_admin).
-const LOGIN_ATIVO = false;
+const LOGIN_ATIVO = true;
+// Modo banco: false = dados inline + salvar-por-token (atual); true = carregar/salvar
+// marcações no Supabase. Só ligue junto com LOGIN_ATIVO e após o wiring testado.
+const DB_MODE = false;
 const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -184,6 +187,14 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   body:not(.authed) #header { visibility: hidden; }
   #accountGroup .accEmail { font-weight: 700; color: #dbe7f3; font-size: 11.5px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #accLogoutBtn { cursor: pointer; }
+  /* Seletor de região nos painéis de ferramenta (só no modo banco) */
+  .regionSelectWrap { margin-bottom: 8px; }
+  .regionSelectWrap label { display: block; font-size: 10.5px; color: #555; font-weight: 700; margin-bottom: 3px; }
+  .regionSelectWrap select {
+    width: 100%; padding: 6px 7px; border: 1px solid #ccc; border-radius: 5px;
+    font-size: 12px; box-sizing: border-box; background: #fff;
+  }
+  body:not(.dbmode) .regionSelectWrap { display: none; }
 
   .onda-endpoint-label {
     background: #1565c0;
@@ -435,6 +446,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <h3>Marcar ruas</h3>
   <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
   <input type="text" id="drawLabel" value="Comércio Local" placeholder="Nome da marcação">
+  <div class="regionSelectWrap">
+    <label>Região desta marcação</label>
+    <select id="drawRegion"></select>
+  </div>
   <div id="colorSwatches">
     <div class="swatch selected" style="background:#d32f2f" data-color="#d32f2f"></div>
     <div class="swatch" style="background:#1565c0" data-color="#1565c0"></div>
@@ -464,6 +479,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <h3>Marcar com fotos</h3>
   <p class="hint">Escreva um nome, escolha uma foto e clique no mapa para posicionar. Passe o cursor sobre a marcação para ver a foto.</p>
   <input type="text" id="photoLabel" placeholder="Nome da marcação (opcional)">
+  <div class="regionSelectWrap">
+    <label>Região desta marcação</label>
+    <select id="photoRegion"></select>
+  </div>
   <input type="file" id="photoFileInput" accept="image/*" style="display:none">
   <button id="photoPickBtn">📷 Escolher foto e posicionar</button>
   <button id="photoCancelBtn">✕ Cancelar</button>
@@ -1786,6 +1805,9 @@ async function enterApp() {
   document.getElementById('accountGroup').style.display = '';
   document.getElementById('accountDivider').style.display = '';
 
+  document.body.classList.toggle('dbmode', DB_MODE);
+  populateRegionSelects();
+
   document.body.classList.add('authed');
   map.invalidateSize();
 }
@@ -1806,6 +1828,86 @@ async function enterApp() {
     if (event === 'SIGNED_IN' && sess && sess.user) { AuthState.user = sess.user; enterApp(); }
   });
 })();
+
+// ============================================================
+//  PASSO 4 (fundação, INERTE enquanto DB_MODE=false) — camada de banco
+//  (Store) batendo com o schema (tabelas marcacoes + fotos) e seletores
+//  de região. O "religar" (trocar carregar/salvar para o Store) será
+//  feito e TESTADO junto com o login funcionando.
+// ============================================================
+const __ALL_REGIONS = Object.keys(REGION_COLORS);
+
+// Preenche os <select> de região: super admin vê todas; editor vê as suas.
+function populateRegionSelects() {
+  const regs = AuthState.isSuper ? __ALL_REGIONS : (AuthState.editableRegions || []);
+  ['drawRegion', 'photoRegion'].forEach(function(id) {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = regs.length
+      ? regs.map(function(r) { return '<option value="' + r.replace(/"/g, '&quot;') + '">' + r + '</option>'; }).join('')
+      : '<option value="">(sem regiões atribuídas)</option>';
+  });
+}
+
+// Converte o dataURL (JPEG) da foto em Blob para subir ao Storage.
+function dataUrlToBlob(dataUrl) {
+  const parts = dataUrl.split(',');
+  const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+  const bin = atob(parts[1]);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+// Camada de acesso ao banco. Cada método corresponde a uma operação do mapa.
+// (loadAll virá no wiring, junto com os helpers addRouteFromData/addPhotoFromData.)
+const Store = {
+  async createRoute(route, data) {
+    const { data: row, error } = await SB.from('marcacoes').insert({
+      tipo: 'rota', label: data.label, cor: data.color, pontos: data.points,
+      rotulo_inicio: data.startLabel || null, rotulo_fim: data.endLabel || null,
+      regiao: data.regiao
+    }).select('id').single();
+    if (error) throw error;
+    route.dbId = row.id;
+    return row.id;
+  },
+  async updateRouteTitles(route) {
+    const { error } = await SB.from('marcacoes').update({
+      label: route.label,
+      rotulo_inicio: route.startLabel || null,
+      rotulo_fim: route.endLabel || null
+    }).eq('id', route.dbId);
+    if (error) throw error;
+  },
+  async deleteRoute(dbId) {
+    const { error } = await SB.from('marcacoes').delete().eq('id', dbId);
+    if (error) throw error;
+  },
+  async createPhoto(entry, data) {
+    const blob = dataUrlToBlob(data.dataUrl);
+    const path = AuthState.user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+    const up = await SB.storage.from(SUPABASE_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (up.error) throw up.error;
+    const { data: pub } = SB.storage.from(SUPABASE_BUCKET).getPublicUrl(path);
+    const { data: row, error } = await SB.from('fotos').insert({
+      label: data.label || null, lat: data.lat, lng: data.lng, foto_path: path, regiao: data.regiao
+    }).select('id').single();
+    if (error) {
+      SB.storage.from(SUPABASE_BUCKET).remove([path]); // desfaz upload órfão
+      throw error;
+    }
+    entry.dbId = row.id;
+    entry.foto_path = path;
+    entry.photo = pub.publicUrl;
+    return row.id;
+  },
+  async deletePhoto(dbId, path) {
+    const { error } = await SB.from('fotos').delete().eq('id', dbId);
+    if (error) throw error;
+    if (path) SB.storage.from(SUPABASE_BUCKET).remove([path]);
+  }
+};
 </script>
 
 
