@@ -1034,9 +1034,10 @@ function applyRotation() {
   mapDiv.style.transform = 'translate(-50%, -50%) rotate(' + currentRotation + 'deg)';
   document.getElementById('rotLabel').textContent = currentRotation + '°';
   rotSlider.value = currentRotation;
-  if (currentRotation === 0 && !drawMode && !eraseMode) {
+  // Arrastar continua liberado mesmo com o mapa girado (só trava ao desenhar/apagar).
+  if (!drawMode && !eraseMode) {
     map.dragging.enable();
-  } else if (currentRotation !== 0) {
+  } else {
     map.dragging.disable();
   }
   clearTimeout(applyRotation._t);
@@ -1308,7 +1309,7 @@ drawToggleBtn.addEventListener('click', function() {
   mapEl.style.cursor = drawMode ? 'crosshair' : '';
   if (drawMode) {
     map.dragging.disable();
-  } else if (currentRotation === 0 && !eraseMode) {
+  } else if (!eraseMode) {
     map.dragging.enable();
   }
 });
@@ -1328,7 +1329,7 @@ function setEraseMode(on) {
     drawToggleBtn.classList.remove('active');
     clearCurrentLine();
     map.dragging.disable();
-  } else if (currentRotation === 0 && !drawMode) {
+  } else if (!drawMode) {
     map.dragging.enable();
   }
 }
