@@ -17,7 +17,7 @@ const SUPABASE_BUCKET = 'fotos';
 const LOGIN_ATIVO = true;
 // Modo banco: false = dados inline + salvar-por-token (atual); true = carregar/salvar
 // marcações no Supabase. Só ligue junto com LOGIN_ATIVO e após o wiring testado.
-const DB_MODE = false;
+const DB_MODE = true;
 const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -699,7 +699,7 @@ const restaurantIcon = L.icon({
   className: 'restaurant-icon-img'
 });
 
-restaurantes.forEach(function(r) {
+function addRestauranteToMap(r) {
   const marker = L.marker([r.lat, r.lng], { icon: restaurantIcon }).addTo(restaurantesLayer);
 
   marker.bindPopup(
@@ -717,7 +717,8 @@ restaurantes.forEach(function(r) {
   poiMarkers.push({ m: marker, z: 12 });
 
   bounds.push([r.lat, r.lng]);
-});
+}
+if (!DB_MODE) restaurantes.forEach(addRestauranteToMap);
 
 // Famílias apoiadoras (bolinhas azuis) — Samambaia. Endereço em nível de casa/lote
 // não existe no OSM; agrupadas no centro da quadra (QR) com leve espalhamento.
@@ -762,7 +763,7 @@ const apoiadores = [
   {"name": "Moisés Nogueira da Silva", "sexo": "Masculino", "quadra": "QR 509", "address": "QR 509 conjunto 4 lote 5", "nota": "", "lat": -15.8914761, "lng": -48.0993078}
 ];
 
-apoiadores.forEach(function(a) {
+function addFamiliaToMap(a) {
   const marker = L.circleMarker([a.lat, a.lng], {
     radius: 7,
     fillColor: '#1565c0',
@@ -788,7 +789,8 @@ apoiadores.forEach(function(a) {
   poiMarkers.push({ m: marker, z: 14 });
 
   bounds.push([a.lat, a.lng]);
-});
+}
+if (!DB_MODE) apoiadores.forEach(addFamiliaToMap);
 
 // Visão base fixa: o mapa sempre abre enquadrando esta região do DF,
 // independente dos marcadores e do tamanho da tela.
@@ -1084,6 +1086,12 @@ window.__saveRouteEdit = function(id) {
 
   route.polyline.setPopupContent(popupContentFor(route.label, id));
   renderRoutesList();
+
+  if (DB_MODE && route.dbId) {
+    Store.updateRouteTitles(route).catch(function(e) {
+      alert('Erro ao salvar a edição no banco: ' + (e.message || e));
+    });
+  }
 };
 
 // Creates the two endpoint labels (start/end) for an ONDA AZUL line and
@@ -1108,17 +1116,45 @@ function addOndaEndpointLabels(latlngs, startText, endText) {
 function deleteRoute(id) {
   const idx = savedRoutes.findIndex(function(r) { return r.id === id; });
   if (idx < 0) return;
+  const dbId = savedRoutes[idx].dbId;
   ondaLayer.removeLayer(savedRoutes[idx].polyline);
   if (savedRoutes[idx].endpointLabels) {
     savedRoutes[idx].endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
   }
   savedRoutes.splice(idx, 1);
   renderRoutesList();
+  if (DB_MODE && dbId) {
+    Store.deleteRoute(dbId).catch(function(e) {
+      alert('Erro ao apagar no banco: ' + (e.message || e));
+    });
+  }
 }
 window.__deleteRouteFromPopup = deleteRoute;
 
 // Load any markings that were saved into this file previously
+// Constrói uma rota a partir de um objeto de dados (usado tanto pelo loader
+// inline quanto pelo Store.loadAll no modo banco). Guarda dbId/regiao.
+function addRouteFromData(r) {
+  const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
+  const polyline = L.polyline(latlngs, {
+    color: r.color, weight: 4, dashArray: '9,7', opacity: 0.9
+  }).addTo(ondaLayer);
+  routeIdCounter++;
+  const id = routeIdCounter;
+  polyline.on('click', function() {
+    if (eraseMode) { deleteRoute(id); }
+  });
+  polyline.bindPopup(popupContentFor(r.label, id));
+  const endpointLabels = addOndaEndpointLabels(latlngs, r.startLabel, r.endLabel);
+  savedRoutes.push({
+    id: id, label: r.label, color: r.color, polyline: polyline,
+    startLabel: r.startLabel || '', endLabel: r.endLabel || '', endpointLabels: endpointLabels,
+    dbId: r.dbId || null, regiao: r.regiao || null
+  });
+}
+
 (function loadPersistedRoutes() {
+  if (DB_MODE) return; // no modo banco, quem carrega é o Store.loadAll
   const dataEl = document.getElementById('savedRoutesData');
   if (!dataEl) return;
   let stored;
@@ -1127,23 +1163,7 @@ window.__deleteRouteFromPopup = deleteRoute;
   } catch (e) {
     stored = [];
   }
-  stored.forEach(function(r) {
-    const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
-    const polyline = L.polyline(latlngs, {
-      color: r.color, weight: 4, dashArray: '9,7', opacity: 0.9
-    }).addTo(ondaLayer);
-    routeIdCounter++;
-    const id = routeIdCounter;
-    polyline.on('click', function() {
-      if (eraseMode) { deleteRoute(id); }
-    });
-    polyline.bindPopup(popupContentFor(r.label, id));
-    const endpointLabels = addOndaEndpointLabels(latlngs, r.startLabel, r.endLabel);
-    savedRoutes.push({
-      id: id, label: r.label, color: r.color, polyline: polyline,
-      startLabel: r.startLabel || '', endLabel: r.endLabel || '', endpointLabels: endpointLabels
-    });
-  });
+  stored.forEach(addRouteFromData);
 })();
 
 const ONDA_AZUL_COLOR = '#1565c0';
@@ -1238,6 +1258,11 @@ document.getElementById('cancelLineBtn').addEventListener('click', clearCurrentL
 
 document.getElementById('finishLineBtn').addEventListener('click', function() {
   if (currentPoints.length < 2) return;
+  let routeRegiao = null;
+  if (DB_MODE) {
+    routeRegiao = document.getElementById('drawRegion').value;
+    if (!routeRegiao) { alert('Selecione a região desta marcação antes de finalizar.'); return; }
+  }
   const label = drawLabelInput.value.trim() || 'Marcação';
   const finalPolyline = L.polyline(currentPoints, {
     color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
@@ -1257,10 +1282,22 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
     endpointLabels = addOndaEndpointLabels(currentPoints.slice(), startLabel, endLabel);
   }
 
-  savedRoutes.push({
+  const routeObj = {
     id: routeId, label: label, color: selectedColor, polyline: finalPolyline,
-    startLabel: startLabel, endLabel: endLabel, endpointLabels: endpointLabels
-  });
+    startLabel: startLabel, endLabel: endLabel, endpointLabels: endpointLabels,
+    dbId: null, regiao: routeRegiao
+  };
+  savedRoutes.push(routeObj);
+
+  if (DB_MODE) {
+    const pontos = finalPolyline.getLatLngs().map(function(ll) { return [ll.lat, ll.lng]; });
+    Store.createRoute(routeObj, {
+      label: label, color: selectedColor, points: pontos,
+      startLabel: startLabel, endLabel: endLabel, regiao: routeRegiao
+    }).catch(function(e) {
+      alert('Erro ao salvar a marcação no banco: ' + (e.message || e));
+    });
+  }
 
   // Reset the ONDA AZUL fields for the next line
   document.getElementById('ondaStart').value = '';
@@ -1578,9 +1615,16 @@ function addPhotoMarkerToMap(entry) {
 window.__deletePhotoMarker = function(id) {
   const idx = photoMarkers.findIndex(function(p) { return p.id === id; });
   if (idx < 0) return;
+  const dbId = photoMarkers[idx].dbId;
+  const fotoPath = photoMarkers[idx].foto_path;
   fotosLayer.removeLayer(photoMarkers[idx].marker);
   photoMarkers.splice(idx, 1);
   renderPhotoMarkersList();
+  if (DB_MODE && dbId) {
+    Store.deletePhoto(dbId, fotoPath).catch(function(e) {
+      alert('Erro ao apagar a foto no banco: ' + (e.message || e));
+    });
+  }
 };
 
 function renderPhotoMarkersList() {
@@ -1605,8 +1649,21 @@ function renderPhotoMarkersList() {
   });
 }
 
+// Constrói um marcador de foto a partir de um objeto de dados (inline ou banco).
+function addPhotoFromData(p) {
+  photoIdCounter++;
+  const entry = {
+    id: photoIdCounter, lat: p.lat, lng: p.lng, label: p.label, photo: p.photo,
+    dbId: p.dbId || null, foto_path: p.foto_path || null, regiao: p.regiao || null
+  };
+  addPhotoMarkerToMap(entry);
+  photoMarkers.push(entry);
+  return entry;
+}
+
 // Load any photo markers already saved into this file
 (function loadPersistedPhotoMarkers() {
+  if (DB_MODE) return; // no modo banco, quem carrega é o Store.loadAll
   const dataEl = document.getElementById('photoMarkersData');
   if (!dataEl) return;
   let stored;
@@ -1615,12 +1672,7 @@ function renderPhotoMarkersList() {
   } catch (e) {
     stored = [];
   }
-  stored.forEach(function(p) {
-    photoIdCounter++;
-    const entry = { id: photoIdCounter, lat: p.lat, lng: p.lng, label: p.label, photo: p.photo };
-    addPhotoMarkerToMap(entry);
-    photoMarkers.push(entry);
-  });
+  stored.forEach(addPhotoFromData);
   renderPhotoMarkersList();
 })();
 
@@ -1668,6 +1720,11 @@ photoCancelBtn.addEventListener('click', cancelPendingPhoto);
 
 map.on('click', function(e) {
   if (!pendingPhoto) return;
+  let fotoRegiao = null;
+  if (DB_MODE) {
+    fotoRegiao = document.getElementById('photoRegion').value;
+    if (!fotoRegiao) { alert('Selecione a região da foto antes de posicionar.'); return; }
+  }
   photoIdCounter++;
   const entry = {
     id: photoIdCounter,
@@ -1676,11 +1733,24 @@ map.on('click', function(e) {
     label: pendingPhoto.label,
     photo: pendingPhoto.dataUrl
   };
+  const dataUrl = pendingPhoto.dataUrl;
   addPhotoMarkerToMap(entry);
   photoMarkers.push(entry);
   renderPhotoMarkersList();
   photoLabelInput.value = '';
   cancelPendingPhoto();
+
+  if (DB_MODE) {
+    Store.createPhoto(entry, {
+      label: entry.label, dataUrl: dataUrl, lat: entry.lat, lng: entry.lng, regiao: fotoRegiao
+    }).catch(function(err) {
+      alert('Erro ao salvar a foto no banco: ' + (err.message || err));
+      fotosLayer.removeLayer(entry.marker); // rollback do marcador local
+      const i = photoMarkers.indexOf(entry);
+      if (i >= 0) photoMarkers.splice(i, 1);
+      renderPhotoMarkersList();
+    });
+  }
 });
 
 document.getElementById('clearAllPhotosBtn').addEventListener('click', function() {
@@ -1808,6 +1878,25 @@ async function enterApp() {
   document.body.classList.toggle('dbmode', DB_MODE);
   populateRegionSelects();
 
+  if (DB_MODE) {
+    // No modo banco o salvar-por-token é obsoleto (persiste sozinho) e o
+    // "limpar todas" em massa é arriscado — escondemos esses controles.
+    const sb = document.getElementById('saveModsBtn');
+    if (sb && sb.closest('.controlGroup')) sb.closest('.controlGroup').style.display = 'none';
+    ['clearAllBtn', 'clearAllPhotosBtn'].forEach(function(bid) {
+      const el = document.getElementById(bid);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  if (DB_MODE) {
+    try {
+      await Store.loadAll();
+    } catch (err) {
+      alert('Login OK, mas falhei ao carregar as marcações do banco: ' + (err.message || err));
+    }
+  }
+
   document.body.classList.add('authed');
   map.invalidateSize();
 }
@@ -1906,6 +1995,36 @@ const Store = {
     const { error } = await SB.from('fotos').delete().eq('id', dbId);
     if (error) throw error;
     if (path) SB.storage.from(SUPABASE_BUCKET).remove([path]);
+  },
+  // Carrega restaurantes, famílias, rotas e fotos do banco e desenha no mapa.
+  async loadAll() {
+    const [rest, fam, rotas, fotos] = await Promise.all([
+      SB.from('restaurantes').select('*'),
+      SB.from('familias').select('*'),
+      SB.from('marcacoes').select('*'),
+      SB.from('fotos').select('*')
+    ]);
+    for (const res of [rest, fam, rotas, fotos]) { if (res.error) throw res.error; }
+
+    (rest.data || []).forEach(addRestauranteToMap);
+    (fam.data || []).forEach(addFamiliaToMap);
+    (rotas.data || []).forEach(function(m) {
+      addRouteFromData({
+        label: m.label, color: m.cor || '#d32f2f', points: m.pontos || [],
+        startLabel: m.rotulo_inicio || '', endLabel: m.rotulo_fim || '',
+        dbId: m.id, regiao: m.regiao
+      });
+    });
+    (fotos.data || []).forEach(function(f) {
+      const url = SB.storage.from(SUPABASE_BUCKET).getPublicUrl(f.foto_path).data.publicUrl;
+      addPhotoFromData({
+        lat: f.lat, lng: f.lng, label: f.label, photo: url,
+        dbId: f.id, foto_path: f.foto_path, regiao: f.regiao
+      });
+    });
+    renderRoutesList();
+    renderPhotoMarkersList();
+    updatePoiLabels();
   }
 };
 </script>
