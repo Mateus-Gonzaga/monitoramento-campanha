@@ -1283,23 +1283,11 @@ function renderRoutesList() {
     routesListEl.innerHTML = '<div style="color:#999; font-size:11.5px;">Nenhuma marcação salva ainda.</div>';
     return;
   }
+  // A lista individual de marcações não é mais exibida aqui (a pedido).
+  // As marcações continuam no mapa; para apagar use o popup ("Remover")
+  // ou o "modo apagar". Mantemos apenas o resumo/contador.
   routesListEl.innerHTML = '<div style="font-size:10.5px; color:#888; margin-bottom:6px;">' +
     savedRoutes.length + ' marcação(ões) salva(s). Dica: ative o "modo apagar" e clique direto na linha no mapa.</div>';
-  savedRoutes.forEach(function(route) {
-    const item = document.createElement('div');
-    item.className = 'routeItem';
-    item.innerHTML =
-      '<span class="routeDot" style="background:' + route.color + '"></span>' +
-      '<span class="routeName">' + route.label + '</span>' +
-      '<button class="routeDel" data-id="' + route.id + '" title="Remover">✕</button>';
-    routesListEl.appendChild(item);
-  });
-  routesListEl.querySelectorAll('.routeDel').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      const id = parseInt(btn.getAttribute('data-id'), 10);
-      deleteRoute(id);
-    });
-  });
 }
 
 document.getElementById('clearAllBtn').addEventListener('click', function() {
