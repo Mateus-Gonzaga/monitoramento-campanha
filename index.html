@@ -1080,6 +1080,8 @@ function addOndaEndpointLabels(latlngs, startText, endText) {
 function deleteRoute(id) {
   const idx = savedRoutes.findIndex(function(r) { return r.id === id; });
   if (idx < 0) return;
+  const nome = savedRoutes[idx].label || 'Marcação';
+  if (!window.confirm('Apagar a marcação "' + nome + '"? Isso é permanente.')) return;
   const dbId = savedRoutes[idx].dbId;
   ondaLayer.removeLayer(savedRoutes[idx].polyline);
   if (savedRoutes[idx].endpointLabels) {
@@ -1579,6 +1581,7 @@ function addPhotoMarkerToMap(entry) {
 window.__deletePhotoMarker = function(id) {
   const idx = photoMarkers.findIndex(function(p) { return p.id === id; });
   if (idx < 0) return;
+  if (!window.confirm('Apagar esta foto? Isso é permanente.')) return;
   const dbId = photoMarkers[idx].dbId;
   const fotoPath = photoMarkers[idx].foto_path;
   fotosLayer.removeLayer(photoMarkers[idx].marker);
