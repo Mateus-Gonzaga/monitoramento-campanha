@@ -477,6 +477,73 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     padding: 5px 12px; font-size: 11px; font-weight: 600; transition: background .15s;
   }
   #accLogoutBtn:hover { background: rgba(255,255,255,0.18); }
+
+  /* ===== Zoom + rotação flutuando no mapa ===== */
+  #mapControls { position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+  #mapControls .mc-zoom, #mapControls .mc-rot {
+    display: flex; flex-direction: column; background: #fff; border-radius: 10px;
+    overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+  #mapControls button {
+    width: 38px; height: 38px; border: none; background: #fff; color: #1a3a5c;
+    font-size: 18px; font-weight: 700; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid #eef1f5; transition: background .12s;
+  }
+  #mapControls .mc-zoom button:last-child, #mapControls .mc-rot button:last-child { border-bottom: none; }
+  #mapControls button:hover { background: #eef4fb; }
+  #mapControls button:disabled { color: #c3c9d1; cursor: default; }
+  #mapControls .mc-rot button { font-size: 15px; }
+
+  /* ===== Menu de usuário (canto superior direito) ===== */
+  #userMenu { position: fixed; top: 8px; right: 8px; z-index: 3200; }
+  #userMenuBtn {
+    width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+    background: #2e5a86; color: #fff; border: 2px solid #fff; font-size: 15px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  #userMenuBtn:hover { background: #3a6a9c; }
+  #userDropdown {
+    position: absolute; top: 46px; right: 0; min-width: 230px; background: #fff;
+    border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,0.28); overflow: hidden; border: 1px solid #e6e9ee;
+  }
+  #userDropdown.hidden { display: none; }
+  #userDropdown .um-head { padding: 14px 16px; border-bottom: 1px solid #eef1f5; }
+  #userDropdown .um-email { font-size: 13px; font-weight: 700; color: #1a3a5c; word-break: break-all; }
+  #userDropdown .um-role { font-size: 11px; color: #2e7d32; font-weight: 600; margin-top: 3px; }
+  #userDropdown button.um-item {
+    width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+    padding: 12px 16px; font-size: 13px; font-weight: 600; color: #b83227;
+    display: flex; align-items: center; gap: 8px; transition: background .12s;
+  }
+  #userDropdown button.um-item:hover { background: #fbecea; }
+
+  /* Botão recolher: ao lado do menu de usuário */
+  #headerToggle { right: 54px; }
+
+  /* Botões flutuantes: ícone + texto (texto some no mobile) */
+  #drawToggleBtn .fab-ico, #photoToggleBtn .fab-ico, #votersToggleBtn .fab-ico { line-height: 1; }
+
+  /* ===== Mobile ===== */
+  @media (max-width: 640px) {
+    #header { padding: 10px 14px; gap: 8px; }
+    #header h1 { font-size: 14px; }
+    #header p { display: none; }
+    .controlsBar { gap: 10px 12px; padding-top: 10px; }
+    #userMenuBtn { width: 34px; height: 34px; font-size: 14px; }
+    #headerToggle { width: 30px; height: 30px; right: 48px; }
+    #userDropdown { min-width: 210px; }
+    /* Botões de baixo só com ícone */
+    #drawToggleBtn, #photoToggleBtn, #votersToggleBtn {
+      padding: 0; width: 46px; height: 46px; border-radius: 50%; justify-content: center; gap: 0;
+    }
+    #drawToggleBtn .fab-txt, #photoToggleBtn .fab-txt, #votersToggleBtn .fab-txt { display: none; }
+    #drawToggleBtn .fab-ico, #photoToggleBtn .fab-ico, #votersToggleBtn .fab-ico { font-size: 20px; }
+    #photoToggleBtn { left: 64px; }
+    #mapControls button { width: 42px; height: 42px; }
+    #mapControls { top: 10px; left: 10px; }
+  }
 </style>
 </head>
 <body class="">
@@ -506,7 +573,18 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 
 <button id="headerToggle" title="Ocultar menu">▲</button>
 
-<button id="drawToggleBtn" title="Marcar ruas no mapa">✏️ Marcar ruas</button>
+<div id="userMenu" style="display:none;">
+  <button id="userMenuBtn" title="Conta"><span id="userAvatar">•</span></button>
+  <div id="userDropdown" class="hidden">
+    <div class="um-head">
+      <div class="um-email" id="accEmail"></div>
+      <div class="um-role" id="accRole"></div>
+    </div>
+    <button class="um-item" id="accLogoutBtn">⎋ Sair da conta</button>
+  </div>
+</div>
+
+<button id="drawToggleBtn" title="Marcar ruas no mapa"><span class="fab-ico">✏️</span><span class="fab-txt">Marcar ruas</span></button>
 <div id="drawPanel">
   <h3>Marcar ruas</h3>
   <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
@@ -539,7 +617,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <button id="clearAllBtn" style="width:100%; background:none; border:none; font-size:11.5px; font-weight:600; cursor:pointer;">Limpar todas as marcações</button>
 </div>
 
-<button id="photoToggleBtn" title="Marcar pontos com fotos">📷 Marcar com fotos</button>
+<button id="photoToggleBtn" title="Marcar pontos com fotos"><span class="fab-ico">📷</span><span class="fab-txt">Marcar com fotos</span></button>
 <div id="photoPanel">
   <h3>Marcar com fotos</h3>
   <p class="hint">Escreva um nome, escolha uma foto e clique no mapa para posicionar. Passe o cursor sobre a marcação para ver a foto.</p>
@@ -591,31 +669,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="controlDivider"></div>
 
     <div class="controlGroup">
-      <span class="controlLabel">Zoom</span>
-      <div id="zoomGroup">
-        <button id="zoomOut" title="Diminuir zoom">−</button>
-        <input type="range" id="zoomSlider" min="0" max="19" step="0.1" value="10">
-        <span id="zoomLabel">14.0</span>
-        <button id="zoomIn" title="Aumentar zoom">+</button>
-      </div>
-    </div>
-
-    <div class="controlDivider"></div>
-
-    <div class="controlGroup">
-      <span class="controlLabel">Rotação</span>
-      <div id="rotateGroup">
-        <button id="rotateCCW" title="Girar 90° à esquerda">⟲</button>
-        <input type="range" id="rotSlider" min="0" max="360" step="1" value="0">
-        <span id="rotLabel">0°</span>
-        <button id="rotateCW" title="Girar 90° à direita">⟳</button>
-        <button id="rotateReset" title="Resetar rotação">⤾</button>
-      </div>
-    </div>
-
-    <div class="controlDivider"></div>
-
-    <div class="controlGroup">
       <span class="controlLabel">Arquivo</span>
       <button id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia</button>
     </div>
@@ -627,13 +680,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <button id="saveModsBtn" title="Salvar modificações no site publicado">💾 Salvar modificações</button>
     </div>
 
-    <div class="controlDivider" id="accountDivider" style="display:none;"></div>
-
-    <div class="controlGroup" id="accountGroup" style="display:none;">
-      <span class="controlLabel">Conta</span>
-      <span class="accEmail" id="accEmail"></span>
-      <button id="accLogoutBtn" title="Sair da conta">Sair</button>
-    </div>
   </div>
 </div>
 
@@ -657,7 +703,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <p id="saveModsStatus"></p>
 </div>
 
-<button id="votersToggleBtn" title="Ver eleitores por região">📊 Eleitores por região</button>
+<button id="votersToggleBtn" title="Ver eleitores por região"><span class="fab-ico">📊</span><span class="fab-txt">Eleitores por região</span></button>
 <div id="votersPanel">
   <h3>Eleitorado x Votação por região</h3>
   <p class="subtitle">Eleições Gerais 2022 — TSE</p>
@@ -668,6 +714,21 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 </div>
 
 <div id="mapOuter">
+  <div id="mapControls">
+    <div class="mc-zoom">
+      <button id="zoomIn" title="Aumentar zoom">+</button>
+      <button id="zoomOut" title="Diminuir zoom">−</button>
+    </div>
+    <div class="mc-rot">
+      <button id="rotateCCW" title="Girar 90° à esquerda">⟲</button>
+      <button id="rotateReset" title="Resetar rotação">⤾</button>
+      <button id="rotateCW" title="Girar 90° à direita">⟳</button>
+    </div>
+    <input type="range" id="zoomSlider" min="0" max="19" step="0.1" value="10" style="display:none">
+    <input type="range" id="rotSlider" min="0" max="360" step="1" value="0" style="display:none">
+    <span id="zoomLabel" style="display:none"></span>
+    <span id="rotLabel" style="display:none"></span>
+  </div>
   <div id="map" class="leaflet-container leaflet-touch leaflet-retina leaflet-fade-anim leaflet-touch-zoom" tabindex="0" style="transform: translate(-50%, -50%) rotate(0deg); outline-style: none; cursor: crosshair;"></div>
 </div>
 </div>
@@ -949,6 +1010,17 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
   lt.addEventListener('click', function() {
     const aberta = !lg.classList.toggle('collapsed');
     lt.setAttribute('aria-expanded', aberta ? 'true' : 'false');
+  });
+})();
+
+// Menu de usuário (abre/fecha; fecha ao clicar fora)
+(function() {
+  const btn = document.getElementById('userMenuBtn');
+  const dd = document.getElementById('userDropdown');
+  if (!btn || !dd) return;
+  btn.addEventListener('click', function(e) { e.stopPropagation(); dd.classList.toggle('hidden'); });
+  document.addEventListener('click', function(e) {
+    if (!dd.classList.contains('hidden') && !dd.contains(e.target) && e.target !== btn) dd.classList.add('hidden');
   });
 })();
 
@@ -1902,11 +1974,11 @@ async function enterApp() {
   AuthState.editableRegions = perfil.regioes || [];
 
   document.getElementById('accEmail').textContent = AuthState.user.email || '';
-  document.getElementById('accEmail').title = AuthState.isSuper
+  document.getElementById('accRole').textContent = AuthState.isSuper
     ? 'Super admin — todas as regiões'
     : (AuthState.editableRegions.length ? 'Editor — ' + AuthState.editableRegions.join(', ') : 'Sem região atribuída');
-  document.getElementById('accountGroup').style.display = '';
-  document.getElementById('accountDivider').style.display = '';
+  document.getElementById('userAvatar').textContent = (AuthState.user.email || '?').charAt(0).toUpperCase();
+  document.getElementById('userMenu').style.display = '';
 
   document.body.classList.toggle('dbmode', DB_MODE);
   populateRegionSelects();
