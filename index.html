@@ -513,11 +513,11 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="controlGroup">
       <span class="controlLabel">Camadas</span>
       <div id="layerFilters">
-        <label><input type="checkbox" id="fltSecoes" checked> Seções</label>
-        <label><input type="checkbox" id="fltRest" checked> Restaurantes</label>
-        <label><input type="checkbox" id="fltFam" checked> Famílias</label>
-        <label><input type="checkbox" id="fltOnda" checked> Onda Azul</label>
-        <label><input type="checkbox" id="fltFotos" checked> Fotos</label>
+        <label><input type="checkbox" id="fltSecoes"> Seções</label>
+        <label><input type="checkbox" id="fltRest"> Restaurantes</label>
+        <label><input type="checkbox" id="fltFam"> Famílias</label>
+        <label><input type="checkbox" id="fltOnda"> Onda Azul</label>
+        <label><input type="checkbox" id="fltFotos"> Fotos</label>
       </div>
     </div>
 
@@ -861,6 +861,8 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
   const el = document.getElementById(pair[0]);
   const layer = pair[1];
   if (!el) return;
+  // Estado inicial: o mapa abre com os filtros zerados (camadas desligadas).
+  if (!el.checked) map.removeLayer(layer);
   el.addEventListener('change', function() {
     if (el.checked) {
       map.addLayer(layer);
