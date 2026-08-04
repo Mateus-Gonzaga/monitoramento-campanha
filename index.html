@@ -601,6 +601,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
     <div class="swatch" style="background:#000000" data-color="#000000"></div>
   </div>
+  <label id="areaModeWrap" style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#1a3a5c; margin-bottom:10px; cursor:pointer;">
+    <input type="checkbox" id="areaMode"> 🗺️ Área de cobertura (fecha e preenche)
+  </label>
   <div id="ondaAzulFields" style="display:none; background:#eaf2fb; border-radius:6px; padding:8px; margin-bottom:8px;">
     <p style="font-size:10.5px; color:#1565c0; font-weight:700; margin:0 0 6px;">🌊 ONDA AZUL — títulos nas pontas</p>
     <input type="text" id="ondaStart" placeholder="Título do início" style="width:100%; padding:5px 7px; border:1px solid #b8d0ea; border-radius:5px; font-size:11.5px; margin-bottom:6px; box-sizing:border-box;">
@@ -662,6 +665,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
         <label><input type="checkbox" id="fltRest"> Restaurantes</label>
         <label><input type="checkbox" id="fltFam"> Famílias</label>
         <label><input type="checkbox" id="fltOnda"> Onda Azul</label>
+        <label><input type="checkbox" id="fltAreas"> Áreas</label>
         <label><input type="checkbox" id="fltFotos"> Fotos</label>
       </div>
     </div>
@@ -764,6 +768,7 @@ const restaurantesLayer = L.layerGroup().addTo(map);
 const familiasLayer = L.layerGroup().addTo(map);
 const ondaLayer = L.layerGroup().addTo(map);
 const fotosLayer = L.layerGroup().addTo(map);
+const areasLayer = L.layerGroup().addTo(map); // áreas de cobertura (polígonos preenchidos)
 
 // Rótulos de restaurantes/famílias que aparecem só a partir de certo zoom
 // cada item: { m: marker, z: zoom mínimo para exibir o rótulo }
@@ -985,7 +990,7 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
 
 // Filtro de camadas: liga/desliga cada tipo de elemento
 [['fltSecoes', secoesLayer], ['fltRest', restaurantesLayer], ['fltFam', familiasLayer],
- ['fltOnda', ondaLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
+ ['fltOnda', ondaLayer], ['fltAreas', areasLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
   const el = document.getElementById(pair[0]);
   const layer = pair[1];
   if (!el) return;
@@ -1254,9 +1259,10 @@ function deleteRoute(id) {
   const nome = savedRoutes[idx].label || 'Marcação';
   if (!window.confirm('Apagar a marcação "' + nome + '"? Isso é permanente.')) return;
   const dbId = savedRoutes[idx].dbId;
-  ondaLayer.removeLayer(savedRoutes[idx].polyline);
+  const lg = savedRoutes[idx].layerGroup || ondaLayer;
+  lg.removeLayer(savedRoutes[idx].polyline);
   if (savedRoutes[idx].endpointLabels) {
-    savedRoutes[idx].endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
+    savedRoutes[idx].endpointLabels.forEach(function(l) { lg.removeLayer(l); });
   }
   savedRoutes.splice(idx, 1);
   renderRoutesList();
@@ -1286,7 +1292,26 @@ function addRouteFromData(r) {
   savedRoutes.push({
     id: id, label: r.label, color: r.color, polyline: polyline,
     startLabel: r.startLabel || '', endLabel: r.endLabel || '', endpointLabels: endpointLabels,
-    dbId: r.dbId || null, regiao: r.regiao || null
+    dbId: r.dbId || null, regiao: r.regiao || null, layerGroup: ondaLayer
+  });
+}
+
+// Constrói uma ÁREA de cobertura (polígono fechado e preenchido) a partir de dados.
+function addAreaFromData(r) {
+  const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
+  const polygon = L.polygon(latlngs, {
+    color: r.color, weight: 2.5, opacity: 0.9, fillColor: r.color, fillOpacity: 0.28
+  }).addTo(areasLayer);
+  routeIdCounter++;
+  const id = routeIdCounter;
+  polygon.on('click', function() {
+    if (eraseMode) { deleteRoute(id); }
+  });
+  polygon.bindPopup(popupContentFor(r.label, id));
+  savedRoutes.push({
+    id: id, label: r.label, color: r.color, polyline: polygon,
+    startLabel: '', endLabel: '', endpointLabels: [],
+    dbId: r.dbId || null, regiao: r.regiao || null, isArea: true, layerGroup: areasLayer
   });
 }
 
@@ -1395,40 +1420,54 @@ document.getElementById('cancelLineBtn').addEventListener('click', clearCurrentL
 
 document.getElementById('finishLineBtn').addEventListener('click', function() {
   if (currentPoints.length < 2) return;
+  const isArea = document.getElementById('areaMode').checked;
+  if (isArea && currentPoints.length < 3) { alert('Uma área precisa de pelo menos 3 pontos.'); return; }
   let routeRegiao = null;
   if (DB_MODE) {
     routeRegiao = document.getElementById('drawRegion').value;
     if (!routeRegiao) { alert('Selecione a região desta marcação antes de finalizar.'); return; }
   }
-  const label = drawLabelInput.value.trim() || 'Marcação';
-  const finalPolyline = L.polyline(currentPoints, {
-    color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
-  }).addTo(ondaLayer);
+  const label = drawLabelInput.value.trim() || (isArea ? 'Área de cobertura' : 'Marcação');
+
+  let finalShape, layerGroup;
+  if (isArea) {
+    finalShape = L.polygon(currentPoints, {
+      color: selectedColor, weight: 2.5, opacity: 0.9, fillColor: selectedColor, fillOpacity: 0.28
+    }).addTo(areasLayer);
+    layerGroup = areasLayer;
+  } else {
+    finalShape = L.polyline(currentPoints, {
+      color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
+    }).addTo(ondaLayer);
+    layerGroup = ondaLayer;
+  }
 
   const routeId = ++routeIdCounter;
-  finalPolyline.on('click', function() {
+  finalShape.on('click', function() {
     if (eraseMode) { deleteRoute(routeId); }
   });
-  finalPolyline.bindPopup(popupContentFor(label, routeId));
+  finalShape.bindPopup(popupContentFor(label, routeId));
 
-  // ONDA AZUL (blue line): attach start/end titles at the line's endpoints
+  // ONDA AZUL (só para linhas): títulos nas pontas
   let startLabel = '', endLabel = '', endpointLabels = [];
-  if (selectedColor === ONDA_AZUL_COLOR) {
+  if (!isArea && selectedColor === ONDA_AZUL_COLOR) {
     startLabel = document.getElementById('ondaStart').value.trim();
     endLabel = document.getElementById('ondaEnd').value.trim();
     endpointLabels = addOndaEndpointLabels(currentPoints.slice(), startLabel, endLabel);
   }
 
   const routeObj = {
-    id: routeId, label: label, color: selectedColor, polyline: finalPolyline,
+    id: routeId, label: label, color: selectedColor, polyline: finalShape,
     startLabel: startLabel, endLabel: endLabel, endpointLabels: endpointLabels,
-    dbId: null, regiao: routeRegiao
+    dbId: null, regiao: routeRegiao, isArea: isArea, layerGroup: layerGroup
   };
   savedRoutes.push(routeObj);
 
   if (DB_MODE) {
-    const pontos = finalPolyline.getLatLngs().map(function(ll) { return [ll.lat, ll.lng]; });
+    const raw = isArea ? finalShape.getLatLngs()[0] : finalShape.getLatLngs();
+    const pontos = raw.map(function(ll) { return [ll.lat, ll.lng]; });
     Store.createRoute(routeObj, {
+      tipo: isArea ? 'area' : 'rota',
       label: label, color: selectedColor, points: pontos,
       startLabel: startLabel, endLabel: endLabel, regiao: routeRegiao
     }).catch(function(e) {
@@ -2079,7 +2118,7 @@ function dataUrlToBlob(dataUrl) {
 const Store = {
   async createRoute(route, data) {
     const { data: row, error } = await SB.from('marcacoes').insert({
-      tipo: 'rota', label: data.label, cor: data.color, pontos: data.points,
+      tipo: data.tipo || 'rota', label: data.label, cor: data.color, pontos: data.points,
       rotulo_inicio: data.startLabel || null, rotulo_fim: data.endLabel || null,
       regiao: data.regiao
     }).select('id').single();
@@ -2137,11 +2176,12 @@ const Store = {
     (rest.data || []).forEach(addRestauranteToMap);
     (fam.data || []).forEach(addFamiliaToMap);
     (rotas.data || []).forEach(function(m) {
-      addRouteFromData({
+      const dados = {
         label: m.label, color: m.cor || '#d32f2f', points: m.pontos || [],
         startLabel: m.rotulo_inicio || '', endLabel: m.rotulo_fim || '',
         dbId: m.id, regiao: m.regiao
-      });
+      };
+      if (m.tipo === 'area') { addAreaFromData(dados); } else { addRouteFromData(dados); }
     });
     (fotos.data || []).forEach(function(f) {
       const url = SB.storage.from(SUPABASE_BUCKET).getPublicUrl(f.foto_path).data.publicUrl;
