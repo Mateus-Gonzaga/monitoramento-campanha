@@ -600,7 +600,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 <div id="drawPanel">
   <h3>Marcar ruas</h3>
   <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
-  <input type="text" id="drawLabel" value="Comércio Local" placeholder="Nome da marcação">
   <div class="regionSelectWrap">
     <label>Região desta marcação</label>
     <select id="drawRegion"></select>
@@ -1143,7 +1142,14 @@ headerToggleBtn.addEventListener('click', function() {
 // ---- Street marking tool (freehand click-to-draw dashed lines) ----
 const drawToggleBtn = document.getElementById('drawToggleBtn');
 const drawPanel = document.getElementById('drawPanel');
-const drawLabelInput = document.getElementById('drawLabel');
+// Nome automático da marcação, derivado da cor/tipo selecionado.
+function rotuloDaCor(cor) {
+  if (cor === '#d32f2f') return 'Zona quente';
+  if (cor === '#1565c0') return 'Onda Azul';
+  if (cor === '#000000') return 'Onde irá passar';
+  const cidade = Object.keys(REGION_COLORS).find(function(c) { return REGION_COLORS[c] === cor; });
+  return cidade || 'Marcação';
+}
 const routesListEl = document.getElementById('routesList');
 const mapEl = document.getElementById('map');
 
@@ -1341,19 +1347,25 @@ function addAreaFromData(r) {
 
 const ONDA_AZUL_COLOR = '#1565c0';
 
-// Gera um swatch para cada cidade (cor da região) na paleta de desenho.
-(function() {
+// Gera um swatch por cidade na paleta de desenho, RESTRITO às regiões que o
+// usuário pode editar (super admin vê todas). Chamado no enterApp após o login.
+function gerarSwatchesCidades() {
   const cont = document.getElementById('colorSwatches');
   if (!cont) return;
-  Object.keys(REGION_COLORS).forEach(function(cidade) {
+  cont.innerHTML = '';
+  const regioes = (typeof AuthState !== 'undefined' && !AuthState.isSuper)
+    ? (AuthState.editableRegions || [])
+    : Object.keys(REGION_COLORS);
+  regioes.forEach(function(cidade) {
+    if (!REGION_COLORS[cidade]) return;
     const sw = document.createElement('div');
     sw.className = 'swatch';
     sw.setAttribute('data-color', REGION_COLORS[cidade]);
     sw.style.background = REGION_COLORS[cidade];
-    sw.title = cidade;
+    sw.title = cidade; // nome da cidade no hover
     cont.appendChild(sw);
   });
-})();
+}
 
 // Seleção de cor (delegação — vale para os 3 tipos fixos e as cores das cidades)
 document.addEventListener('click', function(e) {
@@ -1453,7 +1465,7 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
     routeRegiao = document.getElementById('drawRegion').value;
     if (!routeRegiao) { alert('Selecione a região desta marcação antes de finalizar.'); return; }
   }
-  const label = drawLabelInput.value.trim() || (isArea ? 'Área de cobertura' : 'Marcação');
+  const label = rotuloDaCor(selectedColor);
 
   let finalShape, layerGroup;
   if (isArea) {
@@ -2068,6 +2080,7 @@ async function enterApp() {
 
   document.body.classList.toggle('dbmode', DB_MODE);
   populateRegionSelects();
+  gerarSwatchesCidades();
 
   if (DB_MODE) {
     // No modo banco o salvar-por-token é obsoleto (persiste sozinho) e o
