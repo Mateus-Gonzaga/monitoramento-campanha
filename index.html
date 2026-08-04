@@ -313,12 +313,24 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px;
     font-size: 12.5px; margin-bottom: 8px; box-sizing: border-box;
   }
-  #colorSwatches { display: flex; gap: 6px; margin-bottom: 10px; }
+  #colorSwatches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .swatch {
     width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
     border: 2px solid transparent;
   }
   .swatch.selected { border-color: #1a3a5c; }
+  /* Tipos de marcação com significado fixo (cor reservada) */
+  #tipoSwatches { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .swatch-tipo {
+    display: inline-flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 10px; border-radius: 8px; border: 2px solid transparent;
+    background: #f4f6f9; cursor: pointer; font-size: 12px; font-weight: 600;
+    color: #1a3a5c; text-align: left; transition: background .12s;
+  }
+  .swatch-tipo:hover { background: #e9eef5; }
+  .swatch-tipo.selected { border-color: #1a3a5c; background: #e9eef5; }
+  .swatch-tipo .tdot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto; }
+  .colorCidadeHint { font-size: 10.5px; color: #888; font-weight: 600; margin: 0 0 5px; }
   .drawActions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .drawActions button {
     flex: 1 1 auto; background: #eef2f7; color: #1a3a5c; border: none;
@@ -593,14 +605,13 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <label>Região desta marcação</label>
     <select id="drawRegion"></select>
   </div>
-  <div id="colorSwatches">
-    <div class="swatch selected" style="background:#d32f2f" data-color="#d32f2f"></div>
-    <div class="swatch" style="background:#1565c0" data-color="#1565c0"></div>
-    <div class="swatch" style="background:#2e7d32" data-color="#2e7d32"></div>
-    <div class="swatch" style="background:#e8590c" data-color="#e8590c"></div>
-    <div class="swatch" style="background:#6a1b9a" data-color="#6a1b9a"></div>
-    <div class="swatch" style="background:#000000" data-color="#000000"></div>
+  <div id="tipoSwatches">
+    <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>🔴 Zona quente</div>
+    <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>🔵 Onda Azul</div>
+    <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>⚫ Onde a equipe passou</div>
   </div>
+  <div class="colorCidadeHint">ou marque na cor de uma cidade:</div>
+  <div id="colorSwatches"></div>
   <label id="areaModeWrap" style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#1a3a5c; margin-bottom:10px; cursor:pointer;">
     <input type="checkbox" id="areaMode"> 🗺️ Área de cobertura (fecha e preenche)
   </label>
@@ -646,7 +657,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <button id="legendToggle" type="button" aria-expanded="false">Legenda das regiões <span class="chev">▾</span></button>
 
   <div id="legend" class="collapsed">
-    <span><span class="dot" style="background:#2e7d32; border:2px solid #1a6fb0"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #e53935"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #3949ab"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span>
+    <span><span class="dot" style="background:#2e7d32; border:2px solid #ad1457"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #558b2f"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8d6e63"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span><span><span class="dot" style="background:#d32f2f"></span>🔴 Zona quente</span><span><span class="dot" style="background:#1565c0"></span>🔵 Onda Azul</span><span><span class="dot" style="background:#000000"></span>⚫ Equipe passou</span>
   </div>
 
   <div class="controlsBar">
@@ -743,7 +754,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 
 <script>
 const locais = []; /* movido para o banco */
-const REGION_COLORS = {"Planaltina": "#1a6fb0", "Arapoanga": "#c99a1e", "Sobradinho": "#2e9e6b", "Sobradinho II": "#5ec9a0", "Fercal": "#8c5ec2", "Itapoã": "#0e8f8f", "Varjão": "#d98a1f", "São Sebastião": "#c9376b", "Paranoá": "#7b4b94", "Samambaia": "#e53935", "Taguatinga": "#3949ab", "Gama": "#00acc1", "Santa Maria": "#7cb342", "Estrutural": "#6d4c41", "Sol Nascente": "#f4511e", "Ceilândia": "#8e24aa", "Recanto das Emas": "#c0ca33", "Riacho Fundo": "#00838f"};
+const REGION_COLORS = {"Planaltina": "#ad1457", "Arapoanga": "#c99a1e", "Sobradinho": "#2e9e6b", "Sobradinho II": "#5ec9a0", "Fercal": "#8c5ec2", "Itapoã": "#0e8f8f", "Varjão": "#d98a1f", "São Sebastião": "#c9376b", "Paranoá": "#7b4b94", "Samambaia": "#558b2f", "Taguatinga": "#8d6e63", "Gama": "#00acc1", "Santa Maria": "#7cb342", "Estrutural": "#6d4c41", "Sol Nascente": "#f4511e", "Ceilândia": "#8e24aa", "Recanto das Emas": "#c0ca33", "Riacho Fundo": "#00838f"};
 const ZOOM_LABEL_THRESHOLD = 14;
 
 const map = L.map('map', { zoomControl: false, zoomSnap: 0.1, zoomDelta: 1, preferCanvas: true }).setView([-15.72, -47.68], 10);
@@ -1330,15 +1341,30 @@ function addAreaFromData(r) {
 
 const ONDA_AZUL_COLOR = '#1565c0';
 
-document.querySelectorAll('.swatch').forEach(function(sw) {
-  sw.addEventListener('click', function() {
-    document.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('selected'); });
-    sw.classList.add('selected');
-    selectedColor = sw.getAttribute('data-color');
-    document.getElementById('ondaAzulFields').style.display =
-      (selectedColor === ONDA_AZUL_COLOR) ? 'block' : 'none';
-    redrawCurrentLine();
+// Gera um swatch para cada cidade (cor da região) na paleta de desenho.
+(function() {
+  const cont = document.getElementById('colorSwatches');
+  if (!cont) return;
+  Object.keys(REGION_COLORS).forEach(function(cidade) {
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    sw.setAttribute('data-color', REGION_COLORS[cidade]);
+    sw.style.background = REGION_COLORS[cidade];
+    sw.title = cidade;
+    cont.appendChild(sw);
   });
+})();
+
+// Seleção de cor (delegação — vale para os 3 tipos fixos e as cores das cidades)
+document.addEventListener('click', function(e) {
+  const sw = e.target.closest('.swatch, .swatch-tipo');
+  if (!sw || !sw.hasAttribute('data-color')) return;
+  document.querySelectorAll('.swatch, .swatch-tipo').forEach(function(s) { s.classList.remove('selected'); });
+  sw.classList.add('selected');
+  selectedColor = sw.getAttribute('data-color');
+  document.getElementById('ondaAzulFields').style.display =
+    (selectedColor === ONDA_AZUL_COLOR) ? 'block' : 'none';
+  redrawCurrentLine();
 });
 
 drawToggleBtn.addEventListener('click', function() {
