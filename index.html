@@ -565,6 +565,34 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #mapControls button { width: 42px; height: 42px; }
     #mapControls { top: 10px; left: 10px; }
   }
+  body:not(.authed) #facToggleBtn { visibility: hidden; }
+  #facToggleBtn {
+    position: fixed; bottom: 10px; left: 330px; z-index: 3000;
+    background: #1a3a5c; color: white; border: none; border-radius: 24px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.32); display: flex; align-items: center; gap: 6px;
+    transition: background .15s, transform .12s;
+  }
+  #facToggleBtn:hover { background: #24537f; transform: translateY(-2px); }
+  #facToggleBtn.active { background: #ad1457; }
+  #facPanel {
+    position: fixed; bottom: 56px; left: 10px; z-index: 2999;
+    background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    width: 260px; max-height: 70vh; overflow-y: auto; padding: 12px; display: none;
+    font-size: 12.5px; color: #333;
+  }
+  #facPanel.open { display: block; }
+  #facPanel h3 { font-size: 13px; margin: 0 0 8px; color: #1a3a5c; }
+  #facPanel .hint { font-size: 11px; color: #777; margin-bottom: 10px; line-height: 1.4; }
+  #facPlaceBtn { width: 100%; background: #1a3a5c; color: white; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
+  #facPlaceBtn:hover { background: #24537f; }
+  #facCancelBtn { width: 100%; background: #eef2f7; color: #1a3a5c; border: none; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  @media (max-width: 640px) {
+    #facToggleBtn { padding: 0; width: 46px; height: 46px; border-radius: 50%; justify-content: center; gap: 0; left: 118px; }
+    #facToggleBtn .fab-txt { display: none; }
+    #facToggleBtn .fab-ico { font-size: 20px; }
+    #facPanel { width: calc(100vw - 20px); }
+  }
 </style>
 </head>
 <body class="">
@@ -719,6 +747,28 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <button id="saveModsResetBtn" style="width:100%; background:none; border:none; color:#888; font-size:10.5px; font-weight:600; cursor:pointer; margin-top:8px;">Trocar token / repositório</button>
   </div>
   <p id="saveModsStatus"></p>
+</div>
+
+<button id="facToggleBtn" title="Marcar facilidade (UPA, hospital, delegacia, administração)"><span class="fab-ico">🏥</span><span class="fab-txt">Marcar facilidade</span></button>
+<div id="facPanel">
+  <h3>Marcar facilidade</h3>
+  <p class="hint">Escolha o tipo e a região, clique em "Posicionar" e depois clique no mapa.</p>
+  <div class="regionSelectWrap">
+    <label>Tipo</label>
+    <select id="facTipo">
+      <option value="upa">🚑 UPA</option>
+      <option value="hospital">🏥 Hospital</option>
+      <option value="delegacia">🚓 Delegacia</option>
+      <option value="administracao">🏛️ Administração Regional</option>
+    </select>
+  </div>
+  <div class="regionSelectWrap">
+    <label>Região</label>
+    <select id="facRegion"></select>
+  </div>
+  <button id="facPlaceBtn" class="primary">📍 Posicionar no mapa</button>
+  <button id="facCancelBtn">✕ Cancelar</button>
+  <p id="facStatus" style="font-size:11px; color:#b8730c; margin:8px 0 0;"></p>
 </div>
 
 <button id="votersToggleBtn" title="Ver eleitores por região"><span class="fab-ico">📊</span><span class="fab-txt">Eleitores por região</span></button>
@@ -923,6 +973,56 @@ window.__deleteFacilidade = function(dbId) {
     });
   }
 };
+
+// ---- Marcar nova facilidade (a equipe adiciona pontos no mapa) ----
+(function() {
+  const facToggleBtn = document.getElementById('facToggleBtn');
+  const facPanel = document.getElementById('facPanel');
+  if (!facToggleBtn || !facPanel) return;
+  const mapCursor = document.getElementById('map');
+  let pendingFac = null;
+  function cancelPendingFac() {
+    pendingFac = null;
+    document.getElementById('facStatus').textContent = '';
+    if (mapCursor) mapCursor.style.cursor = '';
+  }
+  facToggleBtn.addEventListener('click', function() {
+    const abrir = !facPanel.classList.contains('open');
+    document.querySelectorAll('#drawPanel, #photoPanel').forEach(function(p) { p.classList.remove('open'); });
+    const db = document.getElementById('drawToggleBtn'); if (db) db.classList.remove('active');
+    const pb = document.getElementById('photoToggleBtn'); if (pb) pb.classList.remove('active');
+    facPanel.classList.toggle('open', abrir);
+    facToggleBtn.classList.toggle('active', abrir);
+    if (!abrir) cancelPendingFac();
+  });
+  document.getElementById('facCancelBtn').addEventListener('click', function() {
+    cancelPendingFac(); facPanel.classList.remove('open'); facToggleBtn.classList.remove('active');
+  });
+  document.getElementById('facPlaceBtn').addEventListener('click', function() {
+    const regiao = document.getElementById('facRegion').value;
+    if (!regiao) { alert('Selecione a região da facilidade.'); return; }
+    pendingFac = { tipo: document.getElementById('facTipo').value, regiao: regiao };
+    document.getElementById('facStatus').textContent = '📍 Clique no mapa para posicionar.';
+    if (mapCursor) mapCursor.style.cursor = 'crosshair';
+  });
+  map.on('click', function(e) {
+    if (!pendingFac) return;
+    const tipo = pendingFac.tipo, regiao = pendingFac.regiao;
+    const nome = (FAC_INFO[tipo] && FAC_INFO[tipo].label) || tipo;
+    const lat = e.latlng.lat, lng = e.latlng.lng;
+    const entry = addFacilidadeToMap({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, dbId: null });
+    cancelPendingFac(); facPanel.classList.remove('open'); facToggleBtn.classList.remove('active');
+    if (DB_MODE) {
+      SB.from('facilidades').insert({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, criado_por: AuthState.user.id })
+        .select('id').single().then(function(res) {
+          facilidadesLayer.removeLayer(entry.marker);
+          const i = facilidades.indexOf(entry); if (i >= 0) facilidades.splice(i, 1);
+          if (res.error) alert('Erro ao salvar facilidade: ' + res.error.message);
+          else addFacilidadeToMap({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, dbId: res.data.id });
+        });
+    }
+  });
+})();
 
 // Famílias apoiadoras (bolinhas azuis) — Samambaia. Endereço em nível de casa/lote
 // não existe no OSM; agrupadas no centro da quadra (QR) com leve espalhamento.
@@ -2195,7 +2295,7 @@ const __ALL_REGIONS = Object.keys(REGION_COLORS);
 // Preenche os <select> de região: super admin vê todas; editor vê as suas.
 function populateRegionSelects() {
   const regs = AuthState.isSuper ? __ALL_REGIONS : (AuthState.editableRegions || []);
-  ['drawRegion', 'photoRegion'].forEach(function(id) {
+  ['drawRegion', 'photoRegion', 'facRegion'].forEach(function(id) {
     const sel = document.getElementById(id);
     if (!sel) return;
     sel.innerHTML = regs.length
