@@ -1029,6 +1029,26 @@ let currentRotation = 0;
 const mapDiv = document.getElementById('map');
 const rotSlider = document.getElementById('rotSlider');
 
+// Compensa o arraste quando o mapa está girado (rotação é via CSS). Sem esta
+// correção, arrastar move o mapa numa direção inclinada em relação ao dedo.
+// Rotacionamos o deslocamento pelo ângulo inverso para o mapa seguir o cursor.
+// (Só age quando currentRotation != 0 — com 0° o comportamento é o original.)
+(function() {
+  if (!window.L || !L.Draggable || L.Draggable.prototype.__rotPatched) return;
+  const orig = L.Draggable.prototype._updatePosition;
+  L.Draggable.prototype._updatePosition = function() {
+    if (currentRotation && this._newPos && this._startPos && !this._newPos.__rot) {
+      const off = this._newPos.subtract(this._startPos);
+      const a = -currentRotation * Math.PI / 180;
+      const cos = Math.cos(a), sin = Math.sin(a);
+      this._newPos = this._startPos.add(L.point(off.x * cos - off.y * sin, off.x * sin + off.y * cos));
+      this._newPos.__rot = true;
+    }
+    orig.call(this);
+  };
+  L.Draggable.prototype.__rotPatched = true;
+})();
+
 function applyRotation() {
   currentRotation = ((currentRotation % 360) + 360) % 360;
   mapDiv.style.transform = 'translate(-50%, -50%) rotate(' + currentRotation + 'deg)';
