@@ -530,6 +530,8 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     display: flex; align-items: center; gap: 8px; transition: background .12s;
   }
   #userDropdown button.um-item:hover { background: #fbecea; }
+  #userDropdown button.um-item.um-neutral { color: #1a3a5c; border-bottom: 1px solid #eef1f5; }
+  #userDropdown button.um-item.um-neutral:hover { background: #eef4fb; }
 
   /* Botão recolher: ao lado do menu de usuário */
   #headerToggle { right: 54px; }
@@ -592,6 +594,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <div class="um-email" id="accEmail"></div>
       <div class="um-role" id="accRole"></div>
     </div>
+    <button class="um-item um-neutral" id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia do mapa</button>
     <button class="um-item" id="accLogoutBtn">⎋ Sair da conta</button>
   </div>
 </div>
@@ -605,9 +608,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <select id="drawRegion"></select>
   </div>
   <div id="tipoSwatches">
-    <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>🔴 Zona quente</div>
-    <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>🔵 Onda Azul</div>
-    <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>⚫ Onde irá passar</div>
+    <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>Zona quente</div>
+    <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>Onda Azul</div>
+    <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>Onde irá passar</div>
   </div>
   <div class="colorCidadeHint">ou marque na cor de uma cidade:</div>
   <div id="colorSwatches"></div>
@@ -674,17 +677,12 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
         <label><input type="checkbox" id="fltSecoes"> Seções</label>
         <label><input type="checkbox" id="fltRest"> Restaurantes</label>
         <label><input type="checkbox" id="fltFam"> Famílias</label>
+        <label><input type="checkbox" id="fltZona"> Zona quente</label>
         <label><input type="checkbox" id="fltOnda"> Onda Azul</label>
+        <label><input type="checkbox" id="fltPassar"> Onde irá passar</label>
         <label><input type="checkbox" id="fltAreas"> Áreas</label>
         <label><input type="checkbox" id="fltFotos"> Fotos</label>
       </div>
-    </div>
-
-    <div class="controlDivider"></div>
-
-    <div class="controlGroup">
-      <span class="controlLabel">Arquivo</span>
-      <button id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia</button>
     </div>
 
     <div class="controlDivider"></div>
@@ -776,9 +774,18 @@ let userForcedShown = false;
 const secoesLayer = L.layerGroup().addTo(map);
 const restaurantesLayer = L.layerGroup().addTo(map);
 const familiasLayer = L.layerGroup().addTo(map);
-const ondaLayer = L.layerGroup().addTo(map);
+const ondaLayer = L.layerGroup().addTo(map);        // rotas AZUIS (Onda Azul) + rótulos de ponta
+const zonaQuenteLayer = L.layerGroup().addTo(map);  // rotas vermelhas (zona quente) e cor de cidade
+const iraPassarLayer = L.layerGroup().addTo(map);   // rotas pretas (onde irá passar)
 const fotosLayer = L.layerGroup().addTo(map);
 const areasLayer = L.layerGroup().addTo(map); // áreas de cobertura (polígonos preenchidos)
+
+// Escolhe a camada da rota pela cor (para o filtro por tipo).
+function layerDaRota(cor) {
+  if (cor === '#1565c0') return ondaLayer;      // Onda Azul
+  if (cor === '#000000') return iraPassarLayer; // Onde irá passar
+  return zonaQuenteLayer;                        // Zona quente (vermelho) e cores de cidade
+}
 
 // Rótulos de restaurantes/famílias que aparecem só a partir de certo zoom
 // cada item: { m: marker, z: zoom mínimo para exibir o rótulo }
@@ -1000,7 +1007,8 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
 
 // Filtro de camadas: liga/desliga cada tipo de elemento
 [['fltSecoes', secoesLayer], ['fltRest', restaurantesLayer], ['fltFam', familiasLayer],
- ['fltOnda', ondaLayer], ['fltAreas', areasLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
+ ['fltZona', zonaQuenteLayer], ['fltOnda', ondaLayer], ['fltPassar', iraPassarLayer],
+ ['fltAreas', areasLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
   const el = document.getElementById(pair[0]);
   const layer = pair[1];
   if (!el) return;
@@ -1295,10 +1303,11 @@ window.__deleteRouteFromPopup = deleteRoute;
 // Constrói uma rota a partir de um objeto de dados (usado tanto pelo loader
 // inline quanto pelo Store.loadAll no modo banco). Guarda dbId/regiao.
 function addRouteFromData(r) {
+  const grupo = layerDaRota(r.color);
   const latlngs = r.points.map(function(p) { return L.latLng(p[0], p[1]); });
   const polyline = L.polyline(latlngs, {
     color: r.color, weight: 4, dashArray: '9,7', opacity: 0.9
-  }).addTo(ondaLayer);
+  }).addTo(grupo);
   routeIdCounter++;
   const id = routeIdCounter;
   polyline.on('click', function() {
@@ -1309,7 +1318,7 @@ function addRouteFromData(r) {
   savedRoutes.push({
     id: id, label: r.label, color: r.color, polyline: polyline,
     startLabel: r.startLabel || '', endLabel: r.endLabel || '', endpointLabels: endpointLabels,
-    dbId: r.dbId || null, regiao: r.regiao || null, layerGroup: ondaLayer
+    dbId: r.dbId || null, regiao: r.regiao || null, layerGroup: grupo
   });
 }
 
@@ -1474,10 +1483,10 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
     }).addTo(areasLayer);
     layerGroup = areasLayer;
   } else {
+    layerGroup = layerDaRota(selectedColor);
     finalShape = L.polyline(currentPoints, {
       color: selectedColor, weight: 4, dashArray: '9,7', opacity: 0.9
-    }).addTo(ondaLayer);
-    layerGroup = ondaLayer;
+    }).addTo(layerGroup);
   }
 
   const routeId = ++routeIdCounter;
@@ -1540,7 +1549,7 @@ function renderRoutesList() {
 
 document.getElementById('clearAllBtn').addEventListener('click', function() {
   savedRoutes.forEach(function(r) {
-    ondaLayer.removeLayer(r.polyline);
+    (r.layerGroup || ondaLayer).removeLayer(r.polyline);
     if (r.endpointLabels) r.endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
   });
   savedRoutes = [];
