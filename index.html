@@ -145,6 +145,13 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   }
   .leaflet-tooltip-top.apoiador-label::before { border-top-color: #1565c0; }
   .badge-apoiador { background:#e3ecfb; color:#1565c0; }
+  .badge-fac { background:#ede7e0; color:#5d4037; }
+  .fac-icon { background: none; border: none; }
+  .fac-pin {
+    width: 30px; height: 30px; border-radius: 50%; background: #fff;
+    border: 2.5px solid #555; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; line-height: 1; box-shadow: 0 1px 5px rgba(0,0,0,0.35);
+  }
   .navlinks { margin-top: 9px; display: flex; gap: 7px; }
   .navlinks a {
     flex: 1; text-align: center; text-decoration: none; font-size: 11.5px;
@@ -681,6 +688,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
         <label><input type="checkbox" id="fltOnda"> Onda Azul</label>
         <label><input type="checkbox" id="fltPassar"> Onde irá passar</label>
         <label><input type="checkbox" id="fltAreas"> Áreas</label>
+        <label><input type="checkbox" id="fltFac"> Facilidades</label>
         <label><input type="checkbox" id="fltFotos"> Fotos</label>
       </div>
     </div>
@@ -779,6 +787,7 @@ const zonaQuenteLayer = L.layerGroup().addTo(map);  // rotas vermelhas (zona que
 const iraPassarLayer = L.layerGroup().addTo(map);   // rotas pretas (onde irá passar)
 const fotosLayer = L.layerGroup().addTo(map);
 const areasLayer = L.layerGroup().addTo(map); // áreas de cobertura (polígonos preenchidos)
+const facilidadesLayer = L.layerGroup().addTo(map); // UPA, delegacia, adm. regional, hospital
 
 // Escolhe a camada da rota pela cor (para o filtro por tipo).
 function layerDaRota(cor) {
@@ -870,6 +879,52 @@ function addRestauranteToMap(r) {
   bounds.push([r.lat, r.lng]);
 }
 if (!DB_MODE) restaurantes.forEach(addRestauranteToMap);
+
+// ---- Facilidades (UPA, delegacia, administração regional, hospital) ----
+const FAC_INFO = {
+  upa:           { emoji: '🚑', label: 'UPA',                    cor: '#c62828' },
+  hospital:      { emoji: '🏥', label: 'Hospital',               cor: '#ad1457' },
+  delegacia:     { emoji: '🚓', label: 'Delegacia',              cor: '#1565c0' },
+  administracao: { emoji: '🏛️', label: 'Administração Regional', cor: '#6d4c41' }
+};
+function buildFacIcon(tipo) {
+  const info = FAC_INFO[tipo] || { emoji: '📍', cor: '#555' };
+  return L.divIcon({
+    className: 'fac-icon',
+    html: '<div class="fac-pin" style="border-color:' + info.cor + '">' + info.emoji + '</div>',
+    iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -16], tooltipAnchor: [0, -16]
+  });
+}
+const facilidades = []; // { dbId, tipo, nome, lat, lng, regiao, marker }
+function addFacilidadeToMap(f) {
+  const info = FAC_INFO[f.tipo] || { label: f.tipo, emoji: '📍' };
+  const marker = L.marker([f.lat, f.lng], { icon: buildFacIcon(f.tipo) }).addTo(facilidadesLayer);
+  marker.bindPopup(
+    '<b>' + (f.nome || info.label) + '</b><span class="badge badge-fac">' + (info.label || '').toUpperCase() + '</span>' +
+    '<br>' + f.regiao +
+    linksNavegacao(f.lat, f.lng) +
+    (f.dbId ? '<button class="photoRemoveBtn" onclick="window.__deleteFacilidade(\'' + f.dbId + '\')">🗑 Remover</button>' : '')
+  );
+  marker.bindTooltip((info.emoji || '') + ' ' + (f.nome || info.label), {
+    permanent: false, direction: 'top', offset: [0, -16], className: 'restaurant-label'
+  });
+  poiMarkers.push({ m: marker, z: 13 });
+  const entry = { dbId: f.dbId || null, tipo: f.tipo, nome: f.nome, lat: f.lat, lng: f.lng, regiao: f.regiao, marker: marker };
+  facilidades.push(entry);
+  return entry;
+}
+window.__deleteFacilidade = function(dbId) {
+  const idx = facilidades.findIndex(function(x) { return x.dbId === dbId; });
+  if (idx < 0) return;
+  if (!window.confirm('Apagar esta facilidade? Isso é permanente.')) return;
+  facilidadesLayer.removeLayer(facilidades[idx].marker);
+  facilidades.splice(idx, 1);
+  if (DB_MODE && dbId) {
+    SB.from('facilidades').delete().eq('id', dbId).then(function(res) {
+      if (res.error) alert('Erro ao apagar no banco: ' + res.error.message);
+    });
+  }
+};
 
 // Famílias apoiadoras (bolinhas azuis) — Samambaia. Endereço em nível de casa/lote
 // não existe no OSM; agrupadas no centro da quadra (QR) com leve espalhamento.
@@ -1008,7 +1063,7 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
 // Filtro de camadas: liga/desliga cada tipo de elemento
 [['fltSecoes', secoesLayer], ['fltRest', restaurantesLayer], ['fltFam', familiasLayer],
  ['fltZona', zonaQuenteLayer], ['fltOnda', ondaLayer], ['fltPassar', iraPassarLayer],
- ['fltAreas', areasLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
+ ['fltAreas', areasLayer], ['fltFac', facilidadesLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
   const el = document.getElementById(pair[0]);
   const layer = pair[1];
   if (!el) return;
@@ -2238,6 +2293,12 @@ const Store = {
         dbId: f.id, foto_path: f.foto_path, regiao: f.regiao
       });
     });
+    // Facilidades (resiliente: se a tabela ainda não foi criada, apenas ignora)
+    try {
+      const fac = await SB.from('facilidades').select('*');
+      if (!fac.error) (fac.data || []).forEach(addFacilidadeToMap);
+    } catch (e) { /* tabela facilidades ainda não existe */ }
+
     renderRoutesList();
     renderPhotoMarkersList();
     updateLabelsByZoom();
