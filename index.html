@@ -597,6 +597,16 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #facToggleBtn .fab-ico { font-size: 20px; }
     #facPanel { width: calc(100vw - 20px); }
   }
+  #auditModal { position: fixed; inset: 0; z-index: 6000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+  #auditModal .aud-box { background: #fff; border-radius: 12px; width: min(94vw, 660px); max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  #auditModal .aud-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid #eee; color: #1a3a5c; font-size: 13px; }
+  #auditModal .aud-head button { background: none; border: none; font-size: 16px; cursor: pointer; color: #666; }
+  #auditList { overflow-y: auto; padding: 4px 0; font-size: 12px; }
+  .aud-row { display: flex; gap: 10px; padding: 7px 16px; border-bottom: 1px solid #f2f2f2; }
+  .aud-when { color: #888; white-space: nowrap; width: 132px; flex: 0 0 auto; }
+  .aud-email { color: #1a3a5c; font-weight: 600; width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 0 auto; }
+  .aud-acao { color: #333; }
+  @media (max-width: 640px) { .aud-row { flex-direction: column; gap: 2px; } .aud-when, .aud-email { width: auto; } }
 </style>
 </head>
 <body class="">
@@ -634,6 +644,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <div class="um-role" id="accRole"></div>
     </div>
     <button class="um-item um-neutral" id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia do mapa</button>
+    <button class="um-item um-neutral" id="auditBtn" style="display:none;">📋 Auditoria (logins e alterações)</button>
     <button class="um-item" id="accLogoutBtn">⎋ Sair da conta</button>
   </div>
 </div>
@@ -972,6 +983,7 @@ window.__deleteFacilidade = function(dbId) {
   if (idx < 0) return;
   if (!window.confirm('Apagar esta facilidade? Isso é permanente.')) return;
   facilidadesLayer.removeLayer(facilidades[idx].marker);
+  logAudit('apagou_facilidade', facilidades[idx].nome, facilidades[idx].regiao);
   facilidades.splice(idx, 1);
   if (DB_MODE && dbId) {
     SB.from('facilidades').delete().eq('id', dbId).then(function(res) {
@@ -1017,6 +1029,7 @@ window.__deleteFacilidade = function(dbId) {
     const nome = (FAC_INFO[tipo] && FAC_INFO[tipo].label) || tipo;
     const lat = e.latlng.lat, lng = e.latlng.lng;
     const entry = addFacilidadeToMap({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, dbId: null });
+    logAudit('criou_facilidade', nome, regiao);
     cancelPendingFac(); facPanel.classList.remove('open'); facToggleBtn.classList.remove('active');
     if (DB_MODE) {
       SB.from('facilidades').insert({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, criado_por: AuthState.user.id })
@@ -1448,6 +1461,7 @@ function deleteRoute(id) {
   if (savedRoutes[idx].endpointLabels) {
     savedRoutes[idx].endpointLabels.forEach(function(l) { lg.removeLayer(l); });
   }
+  logAudit('apagou_rota', savedRoutes[idx].label, savedRoutes[idx].regiao);
   savedRoutes.splice(idx, 1);
   renderRoutesList();
   if (DB_MODE && dbId) {
@@ -1668,6 +1682,7 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
     dbId: null, regiao: routeRegiao, isArea: isArea, layerGroup: layerGroup
   };
   savedRoutes.push(routeObj);
+  logAudit(isArea ? 'criou_area' : 'criou_rota', label, routeRegiao);
 
   if (DB_MODE) {
     const raw = isArea ? finalShape.getLatLngs()[0] : finalShape.getLatLngs();
@@ -1989,6 +2004,7 @@ window.__deletePhotoMarker = function(id) {
   const dbId = photoMarkers[idx].dbId;
   const fotoPath = photoMarkers[idx].foto_path;
   fotosLayer.removeLayer(photoMarkers[idx].marker);
+  logAudit('apagou_foto', photoMarkers[idx].label, photoMarkers[idx].regiao);
   photoMarkers.splice(idx, 1);
   renderPhotoMarkersList();
   if (DB_MODE && dbId) {
@@ -2109,6 +2125,7 @@ map.on('click', function(e) {
   photoMarkers.push(entry);
   renderPhotoMarkersList();
   photoLabelInput.value = '';
+  logAudit('criou_foto', entry.label, fotoRegiao);
   cancelPendingPhoto();
 
   if (DB_MODE) {
@@ -2194,6 +2211,14 @@ votersToggleBtn.addEventListener('click', function() {
 //  salvar/carregar para o banco vem no próximo passo.
 // ============================================================
 const AuthState = { user: null, perfil: null, isSuper: false, editableRegions: [] };
+// Registra um evento de auditoria (login/logout/modificações). Fire-and-forget.
+function logAudit(acao, detalhe, regiao) {
+  if (!DB_MODE || !SB || !AuthState.user) return Promise.resolve();
+  return SB.from('auditoria').insert({
+    usuario_id: AuthState.user.id, email: AuthState.user.email,
+    acao: acao, detalhe: detalhe || null, regiao: regiao || null
+  }).then(function() {}, function() {});
+}
 const authLoading = document.getElementById('authLoading');
 const authLogin = document.getElementById('authLogin');
 const authDenied = document.getElementById('authDenied');
@@ -2214,11 +2239,41 @@ document.getElementById('googleLoginBtn').addEventListener('click', async functi
 });
 
 async function doLogout() {
+  try { await logAudit('logout', 'saiu'); } catch (e) {}
   if (SB) await SB.auth.signOut();
   window.location.reload();
 }
 document.getElementById('authLogoutBtn').addEventListener('click', doLogout);
 document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
+
+// Painel de auditoria (só super admin) — lê os registros da tabela auditoria
+(function() {
+  const btn = document.getElementById('auditBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async function() {
+    const dd = document.getElementById('userDropdown'); if (dd) dd.classList.add('hidden');
+    let modal = document.getElementById('auditModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'auditModal';
+      modal.innerHTML = '<div class="aud-box"><div class="aud-head"><b>📋 Auditoria — logins e alterações</b><button id="auditClose" title="Fechar">✕</button></div><div id="auditList">Carregando…</div></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+      document.getElementById('auditClose').addEventListener('click', function() { modal.style.display = 'none'; });
+    }
+    modal.style.display = 'flex';
+    const list = document.getElementById('auditList');
+    list.textContent = 'Carregando…';
+    const res = await SB.from('auditoria').select('*').order('criado_em', { ascending: false }).limit(300);
+    if (res.error) { list.textContent = 'Erro: ' + res.error.message; return; }
+    if (!res.data.length) { list.textContent = 'Sem registros ainda.'; return; }
+    list.innerHTML = res.data.map(function(r) {
+      const d = new Date(r.criado_em).toLocaleString('pt-BR');
+      const txt = r.acao + (r.regiao ? ' · ' + r.regiao : '') + (r.detalhe ? ' · ' + r.detalhe : '');
+      return '<div class="aud-row"><span class="aud-when">' + d + '</span><span class="aud-email">' + (r.email || '') + '</span><span class="aud-acao">' + txt + '</span></div>';
+    }).join('');
+  });
+})();
 
 async function enterApp() {
   if (document.body.classList.contains('authed')) return;
@@ -2245,6 +2300,9 @@ async function enterApp() {
     : (AuthState.editableRegions.length ? 'Editor — ' + AuthState.editableRegions.join(', ') : 'Sem região atribuída');
   document.getElementById('userAvatar').textContent = (AuthState.user.email || '?').charAt(0).toUpperCase();
   document.getElementById('userMenu').style.display = '';
+  const auditBtn = document.getElementById('auditBtn');
+  if (auditBtn) auditBtn.style.display = AuthState.isSuper ? '' : 'none';
+  logAudit('login', 'entrou');
 
   document.body.classList.toggle('dbmode', DB_MODE);
   populateRegionSelects();
