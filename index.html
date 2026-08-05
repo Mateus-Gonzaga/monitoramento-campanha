@@ -3,6 +3,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monitoramento das Regiões</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -607,6 +609,20 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   .aud-email { color: #1a3a5c; font-weight: 600; width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 0 auto; }
   .aud-acao { color: #333; }
   @media (max-width: 640px) { .aud-row { flex-direction: column; gap: 2px; } .aud-when, .aud-email { width: auto; } }
+  /* Tela de login com mais profundidade (não só azul) + globo */
+  #authOverlay {
+    background:
+      radial-gradient(1100px 560px at 18% -5%, rgba(74,144,217,0.40), transparent 60%),
+      radial-gradient(900px 520px at 105% 110%, rgba(46,125,50,0.28), transparent 55%),
+      linear-gradient(135deg, #1c3e60 0%, #0f2438 100%);
+  }
+  #authOverlay .authCard { border-top: 4px solid #4a90d9; }
+  .authLogo { font-size: 46px; line-height: 1; margin-bottom: 4px; }
+  #auditModal .aud-head #auditCsv {
+    font-size: 11.5px; font-weight: 700; color: #1a3a5c; background: #eef4fb;
+    border: 1px solid #cfe0f0; border-radius: 6px; padding: 5px 10px; cursor: pointer; margin-left: auto; margin-right: 8px;
+  }
+  #auditModal .aud-head #auditCsv:hover { background: #dceafa; }
 </style>
 </head>
 <body class="">
@@ -618,6 +634,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <p>Verificando acesso…</p>
     </div>
     <div id="authLogin" style="display:none;">
+      <div class="authLogo">🌍</div>
       <h2>Monitoramento das Regiões</h2>
       <p>Acesso restrito à equipe. Entre com sua conta Google autorizada.</p>
       <button class="gbtn" id="googleLoginBtn">
@@ -717,7 +734,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 
   <div class="controlsBar">
     <div class="controlGroup">
-      <button id="toggleBtn">Ocultar títulos</button>
+      <button id="toggleBtn">Mostrar títulos</button>
     </div>
 
     <div class="controlDivider"></div>
@@ -1165,6 +1182,7 @@ map.on('moveend', function() {
 });
 
 let labelsVisible = map.getZoom() >= ZOOM_LABEL_THRESHOLD;
+document.getElementById('toggleBtn').textContent = labelsVisible ? 'Ocultar títulos' : 'Mostrar títulos';
 document.getElementById('toggleBtn').addEventListener('click', function() {
   labelsVisible = !labelsVisible;
   userForcedHidden = !labelsVisible;
@@ -2250,24 +2268,41 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
 (function() {
   const btn = document.getElementById('auditBtn');
   if (!btn) return;
+  let ultimosDados = [];
+  function baixarCsv() {
+    if (!ultimosDados.length) return;
+    const esc = function(v) { v = (v == null ? '' : String(v)).replace(/"/g, '""'); return '"' + v + '"'; };
+    const linhas = ['data_hora,email,acao,regiao,detalhe'];
+    ultimosDados.forEach(function(r) {
+      linhas.push([new Date(r.criado_em).toLocaleString('pt-BR'), r.email || '', r.acao || '', r.regiao || '', r.detalhe || ''].map(esc).join(','));
+    });
+    const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'auditoria_' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
   btn.addEventListener('click', async function() {
     const dd = document.getElementById('userDropdown'); if (dd) dd.classList.add('hidden');
     let modal = document.getElementById('auditModal');
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'auditModal';
-      modal.innerHTML = '<div class="aud-box"><div class="aud-head"><b>📋 Auditoria — logins e alterações</b><button id="auditClose" title="Fechar">✕</button></div><div id="auditList">Carregando…</div></div>';
+      modal.innerHTML = '<div class="aud-box"><div class="aud-head"><b>📋 Auditoria</b><button id="auditCsv" title="Baixar CSV">⬇ CSV</button><button id="auditClose" title="Fechar">✕</button></div><div id="auditList">Carregando…</div></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
       document.getElementById('auditClose').addEventListener('click', function() { modal.style.display = 'none'; });
+      document.getElementById('auditCsv').addEventListener('click', baixarCsv);
     }
     modal.style.display = 'flex';
     const list = document.getElementById('auditList');
     list.textContent = 'Carregando…';
-    const res = await SB.from('auditoria').select('*').order('criado_em', { ascending: false }).limit(300);
+    const res = await SB.from('auditoria').select('*').order('criado_em', { ascending: false }).limit(1000);
     if (res.error) { list.textContent = 'Erro: ' + res.error.message; return; }
-    if (!res.data.length) { list.textContent = 'Sem registros ainda.'; return; }
-    list.innerHTML = res.data.map(function(r) {
+    ultimosDados = res.data || [];
+    if (!ultimosDados.length) { list.textContent = 'Sem registros ainda.'; return; }
+    list.innerHTML = ultimosDados.map(function(r) {
       const d = new Date(r.criado_em).toLocaleString('pt-BR');
       const txt = r.acao + (r.regiao ? ' · ' + r.regiao : '') + (r.detalhe ? ' · ' + r.detalhe : '');
       return '<div class="aud-row"><span class="aud-when">' + d + '</span><span class="aud-email">' + (r.email || '') + '</span><span class="aud-acao">' + txt + '</span></div>';
