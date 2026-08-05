@@ -566,6 +566,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #mapControls { top: 10px; left: 10px; }
   }
   body:not(.authed) #facToggleBtn { visibility: hidden; }
+  /* Barra dos botões de marcar (embaixo à esquerda) — espaça sozinho, sem sobrepor */
+  #fabBar { position: fixed; bottom: 10px; left: 10px; z-index: 3000; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: calc(100vw - 220px); }
+  #fabBar > button { position: static !important; left: auto !important; bottom: auto !important; }
   #facToggleBtn {
     position: fixed; bottom: 10px; left: 330px; z-index: 3000;
     background: #1a3a5c; color: white; border: none; border-radius: 24px;
@@ -588,7 +591,8 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #facPlaceBtn:hover { background: #24537f; }
   #facCancelBtn { width: 100%; background: #eef2f7; color: #1a3a5c; border: none; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
   @media (max-width: 640px) {
-    #facToggleBtn { padding: 0; width: 46px; height: 46px; border-radius: 50%; justify-content: center; gap: 0; left: 118px; }
+    #fabBar { max-width: none; gap: 8px; }
+    #facToggleBtn { padding: 0; width: 46px; height: 46px; border-radius: 50%; justify-content: center; gap: 0; }
     #facToggleBtn .fab-txt { display: none; }
     #facToggleBtn .fab-ico { font-size: 20px; }
     #facPanel { width: calc(100vw - 20px); }
@@ -634,7 +638,11 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   </div>
 </div>
 
-<button id="drawToggleBtn" title="Marcar ruas no mapa"><span class="fab-ico">✏️</span><span class="fab-txt">Marcar ruas</span></button>
+<div id="fabBar">
+  <button id="drawToggleBtn" title="Marcar ruas no mapa"><span class="fab-ico">✏️</span><span class="fab-txt">Marcar ruas</span></button>
+  <button id="photoToggleBtn" title="Marcar pontos com fotos"><span class="fab-ico">📷</span><span class="fab-txt">Marcar com fotos</span></button>
+  <button id="facToggleBtn" title="Marcar facilidade (UPA, hospital, delegacia, administração)"><span class="fab-ico">🏥</span><span class="fab-txt">Marcar facilidade</span></button>
+</div>
 <div id="drawPanel">
   <h3>Marcar ruas</h3>
   <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
@@ -668,7 +676,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <button id="clearAllBtn" style="width:100%; background:none; border:none; font-size:11.5px; font-weight:600; cursor:pointer;">Limpar todas as marcações</button>
 </div>
 
-<button id="photoToggleBtn" title="Marcar pontos com fotos"><span class="fab-ico">📷</span><span class="fab-txt">Marcar com fotos</span></button>
 <div id="photoPanel">
   <h3>Marcar com fotos</h3>
   <p class="hint">Escreva um nome, escolha uma foto e clique no mapa para posicionar. Passe o cursor sobre a marcação para ver a foto.</p>
@@ -749,7 +756,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <p id="saveModsStatus"></p>
 </div>
 
-<button id="facToggleBtn" title="Marcar facilidade (UPA, hospital, delegacia, administração)"><span class="fab-ico">🏥</span><span class="fab-txt">Marcar facilidade</span></button>
 <div id="facPanel">
   <h3>Marcar facilidade</h3>
   <p class="hint">Escolha o tipo e a região, clique em "Posicionar" e depois clique no mapa.</p>
