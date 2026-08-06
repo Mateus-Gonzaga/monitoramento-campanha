@@ -662,7 +662,6 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <div class="um-email" id="accEmail"></div>
       <div class="um-role" id="accRole"></div>
     </div>
-    <button class="um-item um-neutral" id="downloadBtn" title="Baixar uma cópia deste mapa com as marcações gravadas dentro">💾 Baixar cópia do mapa</button>
     <button class="um-item um-neutral" id="auditBtn" style="display:none;">📋 Auditoria (logins e alterações)</button>
     <button class="um-item" id="accLogoutBtn">⎋ Sair da conta</button>
   </div>
@@ -1784,7 +1783,8 @@ function buildCleanHtmlSource() {
   return '<!DOCTYPE html>\n' + docClone.outerHTML;
 }
 
-document.getElementById('downloadBtn').addEventListener('click', function() {
+const _dlBtn = document.getElementById('downloadBtn');
+if (_dlBtn) _dlBtn.addEventListener('click', function() {
   const htmlSource = buildCleanHtmlSource();
   const blob = new Blob([htmlSource], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
@@ -2321,6 +2321,62 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   });
 })();
 
+// ---- Remoção local (sem tocar no banco) para eventos de Realtime ----
+function removerRotaLocal(dbId) {
+  const idx = savedRoutes.findIndex(function(r) { return r.dbId === dbId; });
+  if (idx < 0) return;
+  (savedRoutes[idx].layerGroup || ondaLayer).removeLayer(savedRoutes[idx].polyline);
+  if (savedRoutes[idx].endpointLabels) savedRoutes[idx].endpointLabels.forEach(function(l) { ondaLayer.removeLayer(l); });
+  savedRoutes.splice(idx, 1);
+  renderRoutesList();
+}
+function removerFotoLocal(dbId) {
+  const idx = photoMarkers.findIndex(function(p) { return p.dbId === dbId; });
+  if (idx < 0) return;
+  fotosLayer.removeLayer(photoMarkers[idx].marker);
+  photoMarkers.splice(idx, 1);
+  renderPhotoMarkersList();
+}
+function removerFacLocal(dbId) {
+  const idx = facilidades.findIndex(function(f) { return f.dbId === dbId; });
+  if (idx < 0) return;
+  facilidadesLayer.removeLayer(facilidades[idx].marker);
+  facilidades.splice(idx, 1);
+}
+
+// ---- Realtime: mudanças de outros usuários aparecem sem recarregar ----
+let realtimeOn = false;
+function iniciarRealtime() {
+  if (realtimeOn || !SB) return;
+  realtimeOn = true;
+  const meu = function(row) { return AuthState.user && row.criado_por === AuthState.user.id; };
+  SB.channel('mapa-rt')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'marcacoes' }, function(p) {
+      const m = p.new;
+      if (meu(m) || savedRoutes.some(function(r) { return r.dbId === m.id; })) return;
+      const dados = { label: m.label, color: m.cor || '#d32f2f', points: m.pontos || [], startLabel: m.rotulo_inicio || '', endLabel: m.rotulo_fim || '', dbId: m.id, regiao: m.regiao };
+      if (m.tipo === 'area') addAreaFromData(dados); else addRouteFromData(dados);
+      updatePoiLabels();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'marcacoes' }, function(p) { removerRotaLocal(p.old.id); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fotos' }, function(p) {
+      const f = p.new;
+      if (meu(f) || photoMarkers.some(function(x) { return x.dbId === f.id; })) return;
+      const url = SB.storage.from(SUPABASE_BUCKET).getPublicUrl(f.foto_path).data.publicUrl;
+      addPhotoFromData({ lat: f.lat, lng: f.lng, label: f.label, photo: url, dbId: f.id, foto_path: f.foto_path, regiao: f.regiao });
+      renderPhotoMarkersList();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'fotos' }, function(p) { removerFotoLocal(p.old.id); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'facilidades' }, function(p) {
+      const f = p.new;
+      if (meu(f) || facilidades.some(function(x) { return x.dbId === f.id; })) return;
+      addFacilidadeToMap({ tipo: f.tipo, nome: f.nome, regiao: f.regiao, lat: f.lat, lng: f.lng, dbId: f.id });
+      updatePoiLabels();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'facilidades' }, function(p) { removerFacLocal(p.old.id); })
+    .subscribe();
+}
+
 async function enterApp() {
   if (document.body.classList.contains('authed')) return;
   // Perfil só existe se o e-mail estiver na allowlist (trigger cria no 1º login)
@@ -2368,6 +2424,7 @@ async function enterApp() {
   if (DB_MODE) {
     try {
       await Store.loadAll();
+      iniciarRealtime();
     } catch (err) {
       alert('Login OK, mas falhei ao carregar as marcações do banco: ' + (err.message || err));
     }
