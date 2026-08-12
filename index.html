@@ -630,7 +630,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #gerModal .ger-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid #eee; color: #1a3a5c; font-size: 14px; }
   #gerModal .ger-head button { background: none; border: none; font-size: 16px; cursor: pointer; color: #666; }
   #gerModal .ger-form { padding: 12px 16px; border-bottom: 1px solid #eee; }
-  #gerModal #gerEmail, #gerModal #gerPapel { width: 100%; padding: 7px 9px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; margin-bottom: 8px; box-sizing: border-box; }
+  #gerModal #gerNome, #gerModal #gerEmail, #gerModal #gerPapel { width: 100%; padding: 7px 9px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; margin-bottom: 8px; box-sizing: border-box; }
   #gerModal .ger-regs-title { font-size: 11px; color: #666; font-weight: 700; margin-bottom: 5px; }
   #gerModal .ger-regs { display: flex; flex-wrap: wrap; gap: 4px 12px; max-height: 130px; overflow-y: auto; margin-bottom: 10px; }
   #gerModal .ger-reg { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #333; white-space: nowrap; cursor: pointer; }
@@ -2355,8 +2355,8 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
     if (!dadosCache.length) { lista.innerHTML = '<div class="ger-empty">Nenhum usuário cadastrado ainda.</div>'; return; }
     lista.innerHTML = dadosCache.map(function(u) {
       const regs = (u.regioes || []).join(', ') || '—';
-      return '<div class="ger-row"><div class="ger-info"><span class="ger-em">' + u.email + '</span>' +
-        '<span class="ger-meta">' + u.papel + ' · ' + regs + '</span></div>' +
+      return '<div class="ger-row"><div class="ger-info"><span class="ger-em">' + (u.nome || u.email) + '</span>' +
+        '<span class="ger-meta">' + (u.nome ? u.email + ' · ' : '') + u.papel + ' · ' + regs + '</span></div>' +
         '<button class="ger-edit" data-e="' + u.email + '">editar</button>' +
         '<button class="ger-del" data-e="' + u.email + '">remover</button></div>';
     }).join('');
@@ -2366,6 +2366,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   function editar(email) {
     const u = dadosCache.find(function(x) { return x.email === email; });
     if (!u) return;
+    document.getElementById('gerNome').value = u.nome || '';
     document.getElementById('gerEmail').value = u.email;
     document.getElementById('gerPapel').value = u.papel;
     document.querySelectorAll('#gerModal .ger-regs input').forEach(function(c) { c.checked = (u.regioes || []).indexOf(c.value) >= 0; });
@@ -2373,15 +2374,17 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   }
   async function salvar() {
     const email = document.getElementById('gerEmail').value.trim().toLowerCase();
+    const nome = document.getElementById('gerNome').value.trim() || null;
     const papel = document.getElementById('gerPapel').value;
     const regioes = Array.prototype.map.call(document.querySelectorAll('#gerModal .ger-regs input:checked'), function(c) { return c.value; });
     const st = document.getElementById('gerStatus');
     if (!email) { st.textContent = 'Informe o e-mail.'; return; }
     st.textContent = 'Salvando…';
-    const a = await SB.from('allowlist').upsert({ email: email, papel: papel, regioes: regioes }, { onConflict: 'email' });
+    const a = await SB.from('allowlist').upsert({ email: email, nome: nome, papel: papel, regioes: regioes }, { onConflict: 'email' });
     if (a.error) { st.textContent = 'Erro: ' + a.error.message; return; }
-    await SB.from('profiles').update({ papel: papel, regioes: regioes }).eq('email', email);
+    await SB.from('profiles').update({ nome: nome, papel: papel, regioes: regioes }).eq('email', email);
     st.textContent = '✓ Salvo (o usuário recarrega para aplicar).';
+    document.getElementById('gerNome').value = '';
     document.getElementById('gerEmail').value = '';
     document.querySelectorAll('#gerModal .ger-regs input').forEach(function(c) { c.checked = false; });
     carregar();
@@ -2407,7 +2410,8 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
         return '<label class="ger-reg"><input type="checkbox" value="' + r + '"> ' + r + '</label>';
       }).join('');
       modal.innerHTML = '<div class="ger-box"><div class="ger-head"><b>👥 Gerenciar usuários</b><button id="gerClose" title="Fechar">✕</button></div>' +
-        '<div class="ger-form"><input id="gerEmail" type="email" placeholder="email@gmail.com">' +
+        '<div class="ger-form"><input id="gerNome" type="text" placeholder="Nome">' +
+        '<input id="gerEmail" type="email" placeholder="email@gmail.com">' +
         '<select id="gerPapel"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="super_admin">Super admin</option></select>' +
         '<div class="ger-regs-title">Regiões (para editor):</div><div class="ger-regs">' + checks + '</div>' +
         '<button id="gerSalvar" class="primary">Salvar</button><span id="gerStatus"></span></div>' +
