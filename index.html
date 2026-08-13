@@ -663,6 +663,16 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #camadasToggle.aberto .chev { transform: rotate(180deg); }
     .flt-grp { width: 100%; margin: 4px 0 0; }
   }
+  #drawPanel .secLabel { display: block; font-size: 10.5px; color: #667; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; margin: 10px 0 6px; }
+  #drawStartBtn {
+    width: 100%; padding: 11px; background: #2e7d32; color: #fff; border: none; border-radius: 8px;
+    font-size: 13.5px; font-weight: 800; cursor: pointer; margin: 12px 0 6px;
+    box-shadow: 0 3px 10px rgba(46,125,50,0.32); transition: filter .15s, transform .1s;
+  }
+  #drawStartBtn:hover { filter: brightness(1.07); }
+  #drawStartBtn:active { transform: scale(0.98); }
+  #tipoSwatches { margin-bottom: 4px; }
+  #colorSwatches { margin-bottom: 12px; }
   #drawPanel.recolhido, #photoPanel.recolhido, #facPanel.recolhido { display: none !important; }
   #drawBar {
     position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 3100;
@@ -736,12 +746,13 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <label>Região desta marcação</label>
     <select id="drawRegion"></select>
   </div>
+  <label class="secLabel">Tipo de marcação</label>
   <div id="tipoSwatches">
     <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>Zona quente</div>
     <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>Onda Azul</div>
     <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>Onde irá passar</div>
   </div>
-  <div class="colorCidadeHint">ou marque na cor de uma cidade:</div>
+  <label class="secLabel">ou a cor de uma cidade</label>
   <div id="colorSwatches"></div>
   <label id="areaModeWrap" style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#1a3a5c; margin-bottom:10px; cursor:pointer;">
     <input type="checkbox" id="areaMode"> 🗺️ Área de cobertura (fecha e preenche)
@@ -751,8 +762,8 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <input type="text" id="ondaStart" placeholder="Título do início" style="width:100%; padding:5px 7px; border:1px solid #b8d0ea; border-radius:5px; font-size:11.5px; margin-bottom:6px; box-sizing:border-box;">
     <input type="text" id="ondaEnd" placeholder="Título do fim" style="width:100%; padding:5px 7px; border:1px solid #b8d0ea; border-radius:5px; font-size:11.5px; box-sizing:border-box;">
   </div>
-  <button id="drawStartBtn" class="primary" style="width:100%; margin-bottom:8px; background:#2e7d32;">▶ Começar (esconde o menu p/ desenhar)</button>
-  <div class="drawActions">
+  <button id="drawStartBtn">▶ Começar a desenhar</button>
+  <div class="drawActions" style="display:none;">
     <button id="undoPointBtn">↩ Desfazer ponto</button>
     <button id="cancelLineBtn">✕ Cancelar</button>
     <button id="finishLineBtn" class="primary">✓ Finalizar traçado</button>
