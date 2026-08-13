@@ -644,6 +644,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #gerModal .ger-edit, #gerModal .ger-del { background: #eef2f7; border: none; border-radius: 5px; padding: 4px 9px; font-size: 11px; font-weight: 600; cursor: pointer; color: #1a3a5c; flex: 0 0 auto; }
   #gerModal .ger-del { background: #fbe4e0; color: #b83227; }
   #gerModal .ger-empty { padding: 16px; color: #888; text-align: center; }
+  .flt-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px 0 2px; vertical-align: middle; }
+  .flt-grp { font-size: 8.5px; text-transform: uppercase; letter-spacing: .6px; color: #7fa0c2; font-weight: 700; margin: 0 1px 0 8px; align-self: center; }
+  #fltToggleAll { background: rgba(255,255,255,0.12); color: #dbe7f3; border: 1px solid rgba(255,255,255,0.22); border-radius: 20px; padding: 4px 11px; font-size: 10.5px; font-weight: 700; cursor: pointer; transition: background .15s; }
+  #fltToggleAll:hover { background: rgba(255,255,255,0.22); }
   #drawPanel.recolhido, #photoPanel.recolhido, #facPanel.recolhido { display: none !important; }
   #drawBar {
     position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 3100;
@@ -763,7 +767,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 <div id="header">
   <div>
     <h1>Monitoramento das Regiões</h1>
-    <p>Norte: Planaltina, Arapoanga, Sobradinho, Sobradinho II, Fercal, Itapoã, Varjão, São Sebastião, Paranoá · Sul/Oeste: Ceilândia, Taguatinga, Samambaia, Gama, Santa Maria, Recanto das Emas, Riacho Fundo, Estrutural, Sol Nascente</p>
+    <p>Monitoramento de campo · 18 regiões do DF</p>
   </div>
 
   <button id="legendToggle" type="button" aria-expanded="false">Legenda das regiões <span class="chev">▾</span></button>
@@ -782,15 +786,18 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="controlGroup">
       <span class="controlLabel">Camadas</span>
       <div id="layerFilters">
-        <label><input type="checkbox" id="fltSecoes"> Seções</label>
-        <label><input type="checkbox" id="fltRest"> Restaurantes</label>
-        <label><input type="checkbox" id="fltFam"> Famílias</label>
-        <label><input type="checkbox" id="fltZona"> Zona quente</label>
-        <label><input type="checkbox" id="fltOnda"> Onda Azul</label>
-        <label><input type="checkbox" id="fltPassar"> Onde irá passar</label>
-        <label><input type="checkbox" id="fltAreas"> Áreas</label>
-        <label><input type="checkbox" id="fltFac"> Facilidades</label>
-        <label><input type="checkbox" id="fltFotos"> Fotos</label>
+        <button id="fltToggleAll" type="button" title="Ligar/desligar todas">Tudo</button>
+        <span class="flt-grp">Dados</span>
+        <label><input type="checkbox" id="fltSecoes"><span class="flt-dot" style="background:#e8590c"></span> Seções</label>
+        <label><input type="checkbox" id="fltRest"> 🍽 Restaurantes</label>
+        <label><input type="checkbox" id="fltFam"><span class="flt-dot" style="background:#1565c0"></span> Famílias</label>
+        <label><input type="checkbox" id="fltFac"> 🏥 Facilidades</label>
+        <span class="flt-grp">Marcações</span>
+        <label><input type="checkbox" id="fltZona"><span class="flt-dot" style="background:#d32f2f"></span> Zona quente</label>
+        <label><input type="checkbox" id="fltOnda"><span class="flt-dot" style="background:#1565c0"></span> Onda Azul</label>
+        <label><input type="checkbox" id="fltPassar"><span class="flt-dot" style="background:#000"></span> Onde irá passar</label>
+        <label><input type="checkbox" id="fltAreas"><span class="flt-dot" style="background:#888; border-radius:3px"></span> Áreas</label>
+        <label><input type="checkbox" id="fltFotos"> 📷 Fotos</label>
       </div>
     </div>
 
@@ -1256,6 +1263,14 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
       map.removeLayer(layer);
     }
   });
+});
+
+// Botão Tudo/Nenhum das camadas
+document.getElementById('fltToggleAll').addEventListener('click', function() {
+  const boxes = Array.prototype.slice.call(document.querySelectorAll('#layerFilters input[type=checkbox]'));
+  const alvo = !boxes.some(function(b) { return b.checked; });
+  boxes.forEach(function(b) { if (b.checked !== alvo) { b.checked = alvo; b.dispatchEvent(new Event('change')); } });
+  this.textContent = alvo ? 'Nenhum' : 'Tudo';
 });
 
 // Legenda recolhível
