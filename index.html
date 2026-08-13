@@ -83,12 +83,14 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #zoomLabel { font-size: 11px; color: #cfe0f0; min-width: 28px; text-align: center; }
   #hint { font-size: 10px; color: #cfe0f0; }
   #headerToggle {
-    position: fixed; top: 8px; right: 8px; z-index: 3000;
-    background: #1a3a5c; color: white; border: 2px solid white; border-radius: 50%;
-    width: 30px; height: 30px; font-size: 13px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    position: fixed; top: 8px; right: 54px; z-index: 3000;
+    background: #1a3a5c; color: #fff; border: 2px solid #fff; border-radius: 50%;
+    width: 38px; height: 38px; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; line-height: 1;
+    transition: background .15s, transform .12s, box-shadow .15s;
   }
-  #headerToggle:hover { background: #24537f; }
+  #headerToggle:hover { background: #24537f; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  #headerToggle:active { transform: translateY(0) scale(0.94); }
   #mapOuter { position: relative; flex: 1 1 auto; overflow: hidden; background: #dde5ec; }
   #map {
     position: absolute; top: 50%; left: 50%;
@@ -522,9 +524,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
     background: #2e5a86; color: #fff; border: 2px solid #fff; font-size: 15px; font-weight: 700;
     box-shadow: 0 2px 8px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;
-    transition: background .15s;
+    transition: background .15s, transform .12s, box-shadow .15s;
   }
-  #userMenuBtn:hover { background: #3a6a9c; }
+  #userMenuBtn:hover { background: #3a6a9c; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  #userMenuBtn:active { transform: translateY(0) scale(0.94); }
   #userDropdown {
     position: absolute; top: 46px; right: 0; min-width: 230px; background: #fff;
     border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,0.28); overflow: hidden; border: 1px solid #e6e9ee;
@@ -555,7 +558,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #header p { display: none; }
     .controlsBar { gap: 10px 12px; padding-top: 10px; }
     #userMenuBtn { width: 34px; height: 34px; font-size: 14px; }
-    #headerToggle { width: 30px; height: 30px; right: 48px; }
+    #headerToggle { width: 34px; height: 34px; right: 50px; }
     #userDropdown { min-width: 210px; }
     /* Botões de baixo só com ícone */
     #drawToggleBtn, #photoToggleBtn, #votersToggleBtn {
@@ -648,6 +651,8 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   .flt-grp { font-size: 8.5px; text-transform: uppercase; letter-spacing: .6px; color: #7fa0c2; font-weight: 700; margin: 0 1px 0 8px; align-self: center; }
   #fltToggleAll { background: rgba(255,255,255,0.12); color: #dbe7f3; border: 1px solid rgba(255,255,255,0.22); border-radius: 20px; padding: 4px 11px; font-size: 10.5px; font-weight: 700; cursor: pointer; transition: background .15s; }
   #fltToggleAll:hover { background: rgba(255,255,255,0.22); }
+  #header { transition: max-height .32s ease, opacity .22s ease, padding .28s ease; overflow: hidden; max-height: 520px; }
+  #header.oculto { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
   #camadasToggle { background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
   #camadasToggle .chev { display: none; font-size: 9px; transition: transform .2s; }
   @media (max-width: 640px) {
@@ -1402,13 +1407,13 @@ const headerEl = document.getElementById('header');
 const headerToggleBtn = document.getElementById('headerToggle');
 headerToggleBtn.addEventListener('click', function() {
   headerVisible = !headerVisible;
-  headerEl.style.display = headerVisible ? 'flex' : 'none';
+  headerEl.classList.toggle('oculto', !headerVisible);
   headerToggleBtn.textContent = headerVisible ? '▲' : '▼';
   headerToggleBtn.title = headerVisible ? 'Ocultar menu' : 'Mostrar menu';
   setTimeout(function() {
     map.invalidateSize();
     if (labelsShouldShow()) layoutLabels();
-  }, 60);
+  }, 340);
 });
 
 // ---- Street marking tool (freehand click-to-draw dashed lines) ----
