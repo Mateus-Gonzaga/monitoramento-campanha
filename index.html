@@ -679,6 +679,13 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #eqModal .eq-add-btn { background: #2e7d32; color: #fff; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
   #eqModal .eq-empty { padding: 20px; color: #888; text-align: center; }
   #eqModal .eq-status { font-size: 11.5px; color: #2e7d32; padding: 0 16px 8px; }
+  #eqModal .eq-views { display: flex; gap: 6px; padding: 0 14px 4px; }
+  #eqModal .eq-view { flex: 1 1 0; background: #f0f3f8; color: #567; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }
+  #eqModal .eq-view.on { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  #eqModal .eq-all-count { font-size: 11px; color: #7fa0c2; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 6px 16px 2px; }
+  #eqModal .eq-mem-all { margin: 0 14px; border: 1px solid #eef2f7; border-radius: 10px; margin-bottom: 8px; }
+  #eqModal .eq-mem-meta { display: block; font-size: 11px; color: #778; margin-top: 3px; }
+  #eqModal .eq-mem-meta .eq-tag { margin-right: 4px; }
   .flt-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px 0 2px; vertical-align: middle; }
   .flt-grp { font-size: 8.5px; text-transform: uppercase; letter-spacing: .6px; color: #7fa0c2; font-weight: 700; margin: 0 1px 0 8px; align-self: center; }
   #fltToggleAll { background: rgba(255,255,255,0.12); color: #dbe7f3; border: 1px solid rgba(255,255,255,0.22); border-radius: 20px; padding: 4px 11px; font-size: 10.5px; font-weight: 700; cursor: pointer; transition: background .15s; }
@@ -2577,6 +2584,8 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   }
   function esc(s) { return (s || '').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
+  let eqData = { equipes: [], membros: [] };
+  let eqView = 'equipes';
   async function carregar() {
     const lista = document.getElementById('eqLista');
     lista.innerHTML = '<div class="eq-empty">Carregando…</div>';
@@ -2584,8 +2593,49 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
     if (eq.error) { lista.innerHTML = '<div class="eq-empty">Erro: ' + esc(eq.error.message) + '</div>'; return; }
     const mem = await SB.from('equipe_membros').select('*').order('criado_em');
     if (mem.error) { lista.innerHTML = '<div class="eq-empty">Erro: ' + esc(mem.error.message) + '</div>'; return; }
-    const equipes = eq.data || [];
-    const membros = mem.data || [];
+    eqData.equipes = eq.data || [];
+    eqData.membros = mem.data || [];
+    render();
+  }
+  function acoesTel(tel) {
+    const wa = paraWhats(tel);
+    return wa
+      ? '<a class="eq-act eq-wa" title="WhatsApp" target="_blank" rel="noopener" href="https://wa.me/' + wa + '">💬</a>' +
+        '<a class="eq-act eq-call" title="Ligar" href="tel:+' + wa + '">📞</a>'
+      : '';
+  }
+  function render() {
+    const btE = document.getElementById('eqViewEquipes');
+    const btT = document.getElementById('eqViewTodos');
+    if (btE && btT) { btE.classList.toggle('on', eqView === 'equipes'); btT.classList.toggle('on', eqView === 'todos'); }
+    if (eqView === 'todos') return renderTodos();
+    return renderPorEquipe();
+  }
+  function renderTodos() {
+    const lista = document.getElementById('eqLista');
+    const nomeEq = {}; eqData.equipes.forEach(function(e) { nomeEq[e.id] = e; });
+    const membros = eqData.membros;
+    if (!membros.length) { lista.innerHTML = '<div class="eq-empty">Nenhum membro cadastrado ainda.</div>'; return; }
+    const ordenados = membros.slice().sort(function(a, b) {
+      const ra = (nomeEq[a.equipe_id] || {}).regiao || '', rb = (nomeEq[b.equipe_id] || {}).regiao || '';
+      return ra.localeCompare(rb) || (a.nome || '').localeCompare(b.nome || '');
+    });
+    lista.innerHTML = '<div class="eq-all-count">' + ordenados.length + (ordenados.length > 1 ? ' pessoas' : ' pessoa') + ' no total</div>' +
+      ordenados.map(function(m) {
+        const e = nomeEq[m.equipe_id] || {};
+        const cor = REGION_COLORS[e.regiao] || '#7b8ca0';
+        return '<div class="eq-mem eq-mem-all"><div class="eq-mem-info"><span class="eq-mem-nome">' + esc(m.nome) + '</span>' +
+          (m.funcao ? '<span class="eq-mem-func">' + esc(m.funcao) + '</span>' : '') +
+          '<span class="eq-mem-tel">' + esc(fmtTel(m.telefone)) + '</span>' +
+          '<span class="eq-mem-meta"><span class="eq-tag" style="background:' + cor + '">' + esc(e.regiao || '—') + '</span> ' + esc(e.nome || '—') + '</span></div>' +
+          acoesTel(m.telefone) +
+          '<button class="eq-del-mem" data-m="' + m.id + '" title="Remover">✕</button></div>';
+      }).join('');
+    lista.querySelectorAll('.eq-del-mem').forEach(function(b) { b.addEventListener('click', function() { excluirMembro(b.getAttribute('data-m')); }); });
+  }
+  function renderPorEquipe() {
+    const lista = document.getElementById('eqLista');
+    const equipes = eqData.equipes, membros = eqData.membros;
     if (!equipes.length) { lista.innerHTML = '<div class="eq-empty">Nenhuma equipe cadastrada ainda. Crie a primeira acima.</div>'; return; }
     lista.innerHTML = equipes.map(function(e) {
       const cor = REGION_COLORS[e.regiao] || '#7b8ca0';
@@ -2669,12 +2719,15 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
         '<select id="eqNovaReg" class="eq-reg">' + regs + '</select>' +
         '<button id="eqCriar" class="eq-btn">+ Criar equipe</button></div>' +
         '<div id="eqStatus" class="eq-status"></div>' +
+        '<div class="eq-views"><button id="eqViewEquipes" class="eq-view on">Por equipe</button><button id="eqViewTodos" class="eq-view">Todos os membros</button></div>' +
         '<div id="eqLista" class="eq-lista"></div>' +
         '<datalist id="eqFuncoes"><option value="Líder"><option value="Cabo eleitoral"><option value="Motorista"><option value="Apoio"></datalist></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
       document.getElementById('eqClose').addEventListener('click', function() { modal.style.display = 'none'; });
       document.getElementById('eqCriar').addEventListener('click', criarEquipe);
+      document.getElementById('eqViewEquipes').addEventListener('click', function() { eqView = 'equipes'; render(); });
+      document.getElementById('eqViewTodos').addEventListener('click', function() { eqView = 'todos'; render(); });
     }
     modal.style.display = 'flex';
     document.getElementById('eqStatus').textContent = '';
