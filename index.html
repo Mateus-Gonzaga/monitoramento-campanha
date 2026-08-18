@@ -751,6 +751,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>Zona quente</div>
     <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>Onda Azul</div>
     <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>Onde irá passar</div>
+    <div class="swatch-tipo" data-color="#6a1b9a"><span class="tdot" style="background:#6a1b9a"></span>Carreata</div>
   </div>
   <label class="secLabel">ou a cor de uma cidade</label>
   <div id="colorSwatches"></div>
@@ -799,7 +800,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <button id="legendToggle" type="button" aria-expanded="false">Legenda das regiões <span class="chev">▾</span></button>
 
   <div id="legend" class="collapsed">
-    <span><span class="dot" style="background:#2e7d32; border:2px solid #ad1457"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #558b2f"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8d6e63"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span><span><span class="dot" style="background:#d32f2f"></span>Zona quente</span><span><span class="dot" style="background:#1565c0"></span>Onda Azul</span><span><span class="dot" style="background:#000000"></span>Onde irá passar</span><span><span class="dot" style="background:#888; border-radius:3px;"></span>Área de cobertura</span><span>🚑 UPA</span><span>🏥 Hospital</span><span>🚓 Delegacia</span><span>🏛️ Administração Regional</span>
+    <span><span class="dot" style="background:#2e7d32; border:2px solid #ad1457"></span>Planaltina</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c99a1e"></span>Arapoanga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #2e9e6b"></span>Sobradinho</span><span><span class="dot" style="background:#2e7d32; border:2px solid #5ec9a0"></span>Sobradinho II</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8c5ec2"></span>Fercal</span><span><span class="dot" style="background:#2e7d32; border:2px solid #0e8f8f"></span>Itapoã</span><span><span class="dot" style="background:#2e7d32; border:2px solid #d98a1f"></span>Varjão</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c9376b"></span>São Sebastião</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7b4b94"></span>Paranoá</span><span><span class="dot" style="background:#2e7d32; border:2px solid #558b2f"></span>Samambaia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8d6e63"></span>Taguatinga</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00acc1"></span>Gama</span><span><span class="dot" style="background:#2e7d32; border:2px solid #7cb342"></span>Santa Maria</span><span><span class="dot" style="background:#2e7d32; border:2px solid #6d4c41"></span>Estrutural</span><span><span class="dot" style="background:#2e7d32; border:2px solid #f4511e"></span>Sol Nascente</span><span><span class="dot" style="background:#2e7d32; border:2px solid #8e24aa"></span>Ceilândia</span><span><span class="dot" style="background:#2e7d32; border:2px solid #c0ca33"></span>Recanto das Emas</span><span><span class="dot" style="background:#2e7d32; border:2px solid #00838f"></span>Riacho Fundo</span><span><span class="dot" style="background:#e8590c"></span>🍽 Restaurante Comunitário</span><span><span class="dot" style="background:#1565c0; border:2px solid #ffffff"></span>💙 Família apoiadora</span><span><span class="dot" style="background:#d32f2f"></span>Zona quente</span><span><span class="dot" style="background:#1565c0"></span>Onda Azul</span><span><span class="dot" style="background:#000000"></span>Onde irá passar</span><span><span class="dot" style="background:#6a1b9a"></span>Carreata</span><span><span class="dot" style="background:#888; border-radius:3px;"></span>Área de cobertura</span><span>🚑 UPA</span><span>🏥 Hospital</span><span>🚓 Delegacia</span><span>🏛️ Administração Regional</span>
   </div>
 
   <div class="controlsBar">
@@ -822,6 +823,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
         <label><input type="checkbox" id="fltZona"><span class="flt-dot" style="background:#d32f2f"></span> Zona quente</label>
         <label><input type="checkbox" id="fltOnda"><span class="flt-dot" style="background:#1565c0"></span> Onda Azul</label>
         <label><input type="checkbox" id="fltPassar"><span class="flt-dot" style="background:#000"></span> Onde irá passar</label>
+        <label><input type="checkbox" id="fltCarreata"><span class="flt-dot" style="background:#6a1b9a"></span> Carreatas</label>
         <label><input type="checkbox" id="fltAreas"><span class="flt-dot" style="background:#888; border-radius:3px"></span> Áreas</label>
         <label><input type="checkbox" id="fltFotos"> 📷 Fotos</label>
       </div>
@@ -940,6 +942,7 @@ const familiasLayer = L.layerGroup().addTo(map);
 const ondaLayer = L.layerGroup().addTo(map);        // rotas AZUIS (Onda Azul) + rótulos de ponta
 const zonaQuenteLayer = L.layerGroup().addTo(map);  // rotas vermelhas (zona quente) e cor de cidade
 const iraPassarLayer = L.layerGroup().addTo(map);   // rotas pretas (onde irá passar)
+const carreataLayer = L.layerGroup().addTo(map);    // rotas roxas (carreata)
 const fotosLayer = L.layerGroup().addTo(map);
 const areasLayer = L.layerGroup().addTo(map); // áreas de cobertura (polígonos preenchidos)
 const facilidadesLayer = L.layerGroup().addTo(map); // UPA, delegacia, adm. regional, hospital
@@ -948,6 +951,7 @@ const facilidadesLayer = L.layerGroup().addTo(map); // UPA, delegacia, adm. regi
 function layerDaRota(cor) {
   if (cor === '#1565c0') return ondaLayer;      // Onda Azul
   if (cor === '#000000') return iraPassarLayer; // Onde irá passar
+  if (cor === '#6a1b9a') return carreataLayer;  // Carreata
   return zonaQuenteLayer;                        // Zona quente (vermelho) e cores de cidade
 }
 
@@ -1273,7 +1277,7 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
 
 // Filtro de camadas: liga/desliga cada tipo de elemento
 [['fltSecoes', secoesLayer], ['fltRest', restaurantesLayer], ['fltFam', familiasLayer],
- ['fltZona', zonaQuenteLayer], ['fltOnda', ondaLayer], ['fltPassar', iraPassarLayer],
+ ['fltZona', zonaQuenteLayer], ['fltOnda', ondaLayer], ['fltPassar', iraPassarLayer], ['fltCarreata', carreataLayer],
  ['fltAreas', areasLayer], ['fltFac', facilidadesLayer], ['fltFotos', fotosLayer]].forEach(function(pair) {
   const el = document.getElementById(pair[0]);
   const layer = pair[1];
@@ -1435,6 +1439,7 @@ function rotuloDaCor(cor) {
   if (cor === '#d32f2f') return 'Zona quente';
   if (cor === '#1565c0') return 'Onda Azul';
   if (cor === '#000000') return 'Onde irá passar';
+  if (cor === '#6a1b9a') return 'Carreata';
   const cidade = Object.keys(REGION_COLORS).find(function(c) { return REGION_COLORS[c] === cor; });
   return cidade || 'Marcação';
 }
@@ -2605,6 +2610,8 @@ async function enterApp() {
   if (auditBtn) auditBtn.style.display = AuthState.isSuper ? '' : 'none';
   const gerBtn = document.getElementById('gerenciarBtn');
   if (gerBtn) gerBtn.style.display = AuthState.isSuper ? '' : 'none';
+  const votBtn = document.getElementById('votersToggleBtn');
+  if (votBtn) votBtn.style.display = AuthState.isSuper ? '' : 'none';
   logAudit('login', 'entrou');
 
   document.body.classList.toggle('dbmode', DB_MODE);
