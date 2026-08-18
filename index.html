@@ -647,6 +647,38 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #gerModal .ger-edit, #gerModal .ger-del { background: #eef2f7; border: none; border-radius: 5px; padding: 4px 9px; font-size: 11px; font-weight: 600; cursor: pointer; color: #1a3a5c; flex: 0 0 auto; }
   #gerModal .ger-del { background: #fbe4e0; color: #b83227; }
   #gerModal .ger-empty { padding: 16px; color: #888; text-align: center; }
+  #eqModal { position: fixed; inset: 0; z-index: 6000; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+  #eqModal .eq-box { background: #fff; border-radius: 12px; width: min(94vw, 640px); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  #eqModal .eq-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid #eee; color: #1a3a5c; font-size: 14px; }
+  #eqModal .eq-head button { background: none; border: none; font-size: 16px; cursor: pointer; color: #666; }
+  #eqModal .eq-form { padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #eqModal .eq-form input, #eqModal .eq-form select { padding: 7px 9px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; box-sizing: border-box; }
+  #eqModal .eq-form input.eq-nome { flex: 1 1 200px; }
+  #eqModal .eq-form select.eq-reg { flex: 0 1 160px; }
+  #eqModal .eq-btn { background: #1a3a5c; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  #eqModal .eq-lista { overflow-y: auto; padding: 6px 0; }
+  #eqModal .eq-card { border: 1px solid #eef2f7; border-radius: 10px; margin: 10px 14px; overflow: hidden; }
+  #eqModal .eq-card-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f7f9fc; border-bottom: 1px solid #eef2f7; }
+  #eqModal .eq-card-head .eq-tt { font-weight: 700; color: #1a3a5c; font-size: 13px; flex: 1 1 auto; }
+  #eqModal .eq-tag { font-size: 10.5px; font-weight: 700; color: #fff; padding: 2px 8px; border-radius: 20px; flex: 0 0 auto; }
+  #eqModal .eq-del-team { background: none; border: none; color: #b83227; font-size: 12px; cursor: pointer; flex: 0 0 auto; }
+  #eqModal .eq-mem { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #f4f4f4; }
+  #eqModal .eq-mem-info { flex: 1 1 auto; overflow: hidden; }
+  #eqModal .eq-mem-nome { font-weight: 600; color: #223; font-size: 12.5px; }
+  #eqModal .eq-mem-func { font-size: 10.5px; color: #fff; background: #7b8ca0; padding: 1px 7px; border-radius: 20px; margin-left: 6px; }
+  #eqModal .eq-mem-tel { font-size: 11.5px; color: #888; display: block; }
+  #eqModal .eq-act { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; text-decoration: none; font-size: 15px; flex: 0 0 auto; }
+  #eqModal .eq-wa { background: #e7f7ec; }
+  #eqModal .eq-call { background: #e7eefb; }
+  #eqModal .eq-del-mem { background: none; border: none; color: #b83227; font-size: 12px; cursor: pointer; flex: 0 0 auto; }
+  #eqModal .eq-add { display: flex; gap: 6px; flex-wrap: wrap; padding: 9px 12px; background: #fbfcfe; align-items: center; }
+  #eqModal .eq-add input, #eqModal .eq-add select { padding: 6px 8px; border: 1px solid #d5d5d5; border-radius: 6px; font-size: 12px; box-sizing: border-box; }
+  #eqModal .eq-add .eq-mnome { flex: 1 1 130px; }
+  #eqModal .eq-add .eq-mtel { flex: 0 1 130px; }
+  #eqModal .eq-add .eq-mfunc { flex: 0 1 130px; }
+  #eqModal .eq-add-btn { background: #2e7d32; color: #fff; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  #eqModal .eq-empty { padding: 20px; color: #888; text-align: center; }
+  #eqModal .eq-status { font-size: 11.5px; color: #2e7d32; padding: 0 16px 8px; }
   .flt-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px 0 2px; vertical-align: middle; }
   .flt-grp { font-size: 8.5px; text-transform: uppercase; letter-spacing: .6px; color: #7fa0c2; font-weight: 700; margin: 0 1px 0 8px; align-self: center; }
   #fltToggleAll { background: rgba(255,255,255,0.12); color: #dbe7f3; border: 1px solid rgba(255,255,255,0.22); border-radius: 20px; padding: 4px 11px; font-size: 10.5px; font-weight: 700; cursor: pointer; transition: background .15s; }
@@ -723,6 +755,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
       <div class="um-role" id="accRole"></div>
     </div>
     <button class="um-item um-neutral" id="gerenciarBtn" style="display:none;">👥 Gerenciar usuários</button>
+    <button class="um-item um-neutral" id="equipesBtn" style="display:none;">🧑‍🤝‍🧑 Equipes</button>
     <button class="um-item um-neutral" id="auditBtn" style="display:none;">📋 Auditoria (logins e alterações)</button>
     <button class="um-item" id="accLogoutBtn">⎋ Sair da conta</button>
   </div>
@@ -2525,6 +2558,130 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   });
 })();
 
+// ---- Painel de Equipes (só super admin) ----
+(function() {
+  const btn = document.getElementById('equipesBtn');
+  if (!btn) return;
+  function soDigitos(t) { return (t || '').replace(/\D/g, ''); }
+  function paraWhats(tel) {
+    let d = soDigitos(tel);
+    if (!d) return '';
+    if (d.length <= 11) d = '55' + d; // adiciona DDI Brasil se veio só DDD+número
+    return d;
+  }
+  function fmtTel(tel) {
+    const d = soDigitos(tel);
+    if (d.length === 11) return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+    if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+    return tel || '';
+  }
+  function esc(s) { return (s || '').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  async function carregar() {
+    const lista = document.getElementById('eqLista');
+    lista.innerHTML = '<div class="eq-empty">Carregando…</div>';
+    const eq = await SB.from('equipes').select('*').order('regiao').order('nome');
+    if (eq.error) { lista.innerHTML = '<div class="eq-empty">Erro: ' + esc(eq.error.message) + '</div>'; return; }
+    const mem = await SB.from('equipe_membros').select('*').order('criado_em');
+    if (mem.error) { lista.innerHTML = '<div class="eq-empty">Erro: ' + esc(mem.error.message) + '</div>'; return; }
+    const equipes = eq.data || [];
+    const membros = mem.data || [];
+    if (!equipes.length) { lista.innerHTML = '<div class="eq-empty">Nenhuma equipe cadastrada ainda. Crie a primeira acima.</div>'; return; }
+    lista.innerHTML = equipes.map(function(e) {
+      const cor = REGION_COLORS[e.regiao] || '#7b8ca0';
+      const mm = membros.filter(function(m) { return m.equipe_id === e.id; });
+      const linhas = mm.length ? mm.map(function(m) {
+        const wa = paraWhats(m.telefone);
+        const acoes = wa
+          ? '<a class="eq-act eq-wa" title="WhatsApp" target="_blank" rel="noopener" href="https://wa.me/' + wa + '">💬</a>' +
+            '<a class="eq-act eq-call" title="Ligar" href="tel:+' + wa + '">📞</a>'
+          : '';
+        return '<div class="eq-mem"><div class="eq-mem-info"><span class="eq-mem-nome">' + esc(m.nome) + '</span>' +
+          (m.funcao ? '<span class="eq-mem-func">' + esc(m.funcao) + '</span>' : '') +
+          '<span class="eq-mem-tel">' + esc(fmtTel(m.telefone)) + '</span></div>' +
+          acoes + '<button class="eq-del-mem" data-m="' + m.id + '" title="Remover">✕</button></div>';
+      }).join('') : '<div class="eq-empty" style="padding:10px;">Sem membros ainda.</div>';
+      return '<div class="eq-card"><div class="eq-card-head"><span class="eq-tt">' + esc(e.nome) + '</span>' +
+        '<span class="eq-tag" style="background:' + cor + '">' + esc(e.regiao) + '</span>' +
+        '<button class="eq-del-team" data-t="' + e.id + '" title="Excluir equipe">excluir</button></div>' +
+        linhas +
+        '<div class="eq-add" data-t="' + e.id + '">' +
+          '<input class="eq-mnome" type="text" placeholder="Nome completo">' +
+          '<input class="eq-mtel" type="tel" placeholder="Telefone (DDD + número)">' +
+          '<input class="eq-mfunc" list="eqFuncoes" placeholder="Função">' +
+          '<button class="eq-add-btn">+ Adicionar</button>' +
+        '</div></div>';
+    }).join('');
+    lista.querySelectorAll('.eq-del-team').forEach(function(b) { b.addEventListener('click', function() { excluirEquipe(b.getAttribute('data-t')); }); });
+    lista.querySelectorAll('.eq-del-mem').forEach(function(b) { b.addEventListener('click', function() { excluirMembro(b.getAttribute('data-m')); }); });
+    lista.querySelectorAll('.eq-add .eq-add-btn').forEach(function(b) {
+      b.addEventListener('click', function() { adicionarMembro(b.parentNode); });
+    });
+  }
+  async function criarEquipe() {
+    const nome = document.getElementById('eqNovoNome').value.trim();
+    const regiao = document.getElementById('eqNovaReg').value;
+    const st = document.getElementById('eqStatus');
+    if (!nome) { st.textContent = 'Informe o nome da equipe.'; return; }
+    st.textContent = 'Salvando…';
+    const r = await SB.from('equipes').insert({ nome: nome, regiao: regiao });
+    if (r.error) { st.textContent = 'Erro: ' + r.error.message; return; }
+    st.textContent = '✓ Equipe criada.';
+    document.getElementById('eqNovoNome').value = '';
+    logAudit('equipe', 'criou equipe ' + nome, regiao);
+    carregar();
+  }
+  async function adicionarMembro(box) {
+    const equipeId = box.getAttribute('data-t');
+    const nome = box.querySelector('.eq-mnome').value.trim();
+    const tel = box.querySelector('.eq-mtel').value.trim();
+    const func = box.querySelector('.eq-mfunc').value.trim() || null;
+    const st = document.getElementById('eqStatus');
+    if (!nome) { st.textContent = 'Informe o nome do membro.'; return; }
+    st.textContent = 'Salvando…';
+    const r = await SB.from('equipe_membros').insert({ equipe_id: equipeId, nome: nome, telefone: tel || null, funcao: func });
+    if (r.error) { st.textContent = 'Erro: ' + r.error.message; return; }
+    st.textContent = '✓ Membro adicionado.';
+    logAudit('equipe', 'adicionou ' + nome + (func ? ' (' + func + ')' : ''));
+    carregar();
+  }
+  async function excluirMembro(id) {
+    if (!window.confirm('Remover este membro?')) return;
+    await SB.from('equipe_membros').delete().eq('id', id);
+    logAudit('equipe', 'removeu membro');
+    carregar();
+  }
+  async function excluirEquipe(id) {
+    if (!window.confirm('Excluir a equipe e todos os seus membros?')) return;
+    await SB.from('equipe_membros').delete().eq('equipe_id', id);
+    await SB.from('equipes').delete().eq('id', id);
+    logAudit('equipe', 'excluiu equipe');
+    carregar();
+  }
+  btn.addEventListener('click', async function() {
+    const dd = document.getElementById('userDropdown'); if (dd) dd.classList.add('hidden');
+    let modal = document.getElementById('eqModal');
+    if (!modal) {
+      modal = document.createElement('div'); modal.id = 'eqModal';
+      const regs = Object.keys(REGION_COLORS).map(function(r) { return '<option value="' + r + '">' + r + '</option>'; }).join('');
+      modal.innerHTML = '<div class="eq-box"><div class="eq-head"><b>🧑‍🤝‍🧑 Equipes</b><button id="eqClose" title="Fechar">✕</button></div>' +
+        '<div class="eq-form"><input id="eqNovoNome" class="eq-nome" type="text" placeholder="Nome da equipe (ex.: Equipe 1)">' +
+        '<select id="eqNovaReg" class="eq-reg">' + regs + '</select>' +
+        '<button id="eqCriar" class="eq-btn">+ Criar equipe</button></div>' +
+        '<div id="eqStatus" class="eq-status"></div>' +
+        '<div id="eqLista" class="eq-lista"></div>' +
+        '<datalist id="eqFuncoes"><option value="Líder"><option value="Cabo eleitoral"><option value="Motorista"><option value="Apoio"></datalist></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+      document.getElementById('eqClose').addEventListener('click', function() { modal.style.display = 'none'; });
+      document.getElementById('eqCriar').addEventListener('click', criarEquipe);
+    }
+    modal.style.display = 'flex';
+    document.getElementById('eqStatus').textContent = '';
+    await carregar();
+  });
+})();
+
 // ---- Remoção local (sem tocar no banco) para eventos de Realtime ----
 function removerRotaLocal(dbId) {
   const idx = savedRoutes.findIndex(function(r) { return r.dbId === dbId; });
@@ -2610,6 +2767,8 @@ async function enterApp() {
   if (auditBtn) auditBtn.style.display = AuthState.isSuper ? '' : 'none';
   const gerBtn = document.getElementById('gerenciarBtn');
   if (gerBtn) gerBtn.style.display = AuthState.isSuper ? '' : 'none';
+  const eqBtn = document.getElementById('equipesBtn');
+  if (eqBtn) eqBtn.style.display = AuthState.isSuper ? '' : 'none';
   const votBtn = document.getElementById('votersToggleBtn');
   if (votBtn) votBtn.style.display = AuthState.isSuper ? '' : 'none';
   logAudit('login', 'entrou');
