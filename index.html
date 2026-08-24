@@ -877,14 +877,116 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   /* RESET dos painéis rehospedados: removem o "cartão flutuante" próprio
      (vem depois das regras-base = mesma especificidade, vence). Mantém
      display:none / .open{display:block} e o conteúdo intactos. */
-  #drawPanel, #photoPanel, #facPanel, #votersPanel, #saveModsPanel {
+  #drawPanel, #photoPanel, #facPanel, #votersPanel, #saveModsPanel, #camadasPanel {
     position: static; inset: auto; left: auto; right: auto; top: auto; bottom: auto;
     width: auto; max-height: none; z-index: auto;
     background: transparent; box-shadow: none; border-radius: 0; padding: 0;
   }
+  #camadasPanel { display: none; color: var(--text); }
+  #camadasPanel.open { display: block; }
+
+  /* ===== Centro de controle do mapa (Camadas + Legenda) ===== */
+  /* Busca no topo (ação mais frequente) */
+  #camadasPanel .cam-search { position: relative; margin-bottom: var(--sp-3); }
+  #camadasPanel .cam-search-ico {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--text-muted); pointer-events: none;
+  }
+  #camadasPanel .cam-search-ico svg { width: 16px; height: 16px; display: block; }
+  #camBusca {
+    width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px 0 34px;
+    font-size: var(--fs-14); color: var(--text); background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  }
+  #camBusca::placeholder { color: var(--text-muted); }
+  #camBusca:focus { outline: none; border-color: var(--navy); }
+  #camBusca:focus-visible { box-shadow: var(--focus-ring); }
+
+  /* Ligar / Desligar tudo — no topo, associado ao estado geral (não no footer) */
+  #camadasPanel .cam-allbtns { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+  #camadasPanel .cam-allbtn {
+    flex: 1 1 0; height: 34px; font-size: var(--fs-13); font-weight: var(--fw-semibold);
+    color: var(--navy); background: var(--surface-2); cursor: pointer;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+  }
+  #camadasPanel .cam-allbtn:hover { background: var(--surface-3); border-color: var(--navy); }
+  #camadasPanel .cam-allbtn:active { transform: translateY(0.5px); }
+  #camadasPanel .cam-allbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  /* "Mostrar títulos" (o #toggleBtn existente, re-hospedado) */
+  #camadasPanel .cam-titulos-row { margin-bottom: var(--sp-3); }
+  #camadasPanel #toggleBtn {
+    width: 100%; height: 34px; text-align: left; padding: 0 12px;
+    font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--navy);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: background var(--t-fast), border-color var(--t-fast);
+  }
+  #camadasPanel #toggleBtn:hover { background: var(--surface-3); border-color: var(--navy); }
+  #camadasPanel #toggleBtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  /* #layerFilters vira coluna vertical dentro do painel (sobrepõe o layout de header) */
+  #camadasPanel #layerFilters {
+    display: block; flex-direction: column; align-items: stretch; gap: 0;
+    max-width: none; padding: 0; margin: 0;
+  }
+  #camadasPanel .cam-legacy { display: none; }  /* #fltToggleAll preservado, oculto */
+
+  /* Grupos colapsáveis */
+  #camadasPanel .cam-group { border-top: 1px solid var(--border); }
+  #camadasPanel #camLayersSlot .cam-group:first-child { border-top: none; }
+  #camadasPanel .cam-group-head {
+    width: 100%; display: flex; align-items: center; gap: 6px;
+    background: none; border: none; cursor: pointer;
+    padding: 9px 2px; font-size: var(--fs-12); font-weight: var(--fw-bold);
+    letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted);
+  }
+  #camadasPanel .cam-group-head:hover { color: var(--navy); }
+  #camadasPanel .cam-group-head:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  #camadasPanel .cam-count { font-weight: var(--fw-semibold); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+  #camadasPanel .cam-chev { margin-left: auto; font-size: 10px; transition: transform var(--t-base); }
+  #camadasPanel .cam-group.collapsed .cam-chev { transform: rotate(-90deg); }
+  #camadasPanel .cam-group.collapsed > .cam-group-body { display: none; }
+  #camadasPanel .cam-group-empty { display: none; }
+
+  /* Itens (checkbox) com área de clique confortável e estado claro */
+  #camadasPanel .cam-item {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 8px 8px; margin: 2px 0; border-radius: var(--radius-sm);
+    font-size: var(--fs-13); color: var(--text); cursor: pointer;
+    border: 1px solid transparent; transition: background var(--t-fast), border-color var(--t-fast);
+  }
+  #camadasPanel .cam-item:hover { background: var(--surface-2); }
+  #camadasPanel .cam-item input { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; margin: 0; flex: 0 0 auto; }
+  #camadasPanel .cam-item:has(input:checked) { background: var(--surface-3); border-color: var(--border); font-weight: var(--fw-semibold); }
+  #camadasPanel .cam-item:focus-within { box-shadow: var(--focus-ring); }
+  #camadasPanel .cam-item .flt-dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+
+  /* Regiões: a legenda deixa de ser paredão e vira lista vertical pesquisável.
+     Neutraliza o colapso próprio de #legend (governado agora pelo grupo). */
+  #camadasPanel #legend {
+    display: block !important; border: none; padding: 4px 0 0; gap: 0; font-size: var(--fs-13);
+  }
+  #camadasPanel #legend > span {
+    display: flex; align-items: center; gap: 9px; padding: 6px 8px; color: var(--text);
+    border-radius: var(--radius-sm);
+  }
+  #camadasPanel #legend > span:hover { background: var(--surface-2); }
+  #camadasPanel #legend > span .dot { flex: 0 0 auto; }
+
+  /* Filtro visual da busca */
+  #camadasPanel .cam-hidden { display: none !important; }
+  #camadasPanel.cam-searching .cam-group > .cam-group-body { display: block !important; }
+  #camadasPanel .cam-empty { text-align: center; color: var(--text-muted); padding: var(--sp-4) var(--sp-2); }
+  #camadasPanel .cam-empty p { margin: 0 0 var(--sp-3); font-size: var(--fs-14); }
+
+  /* Chrome antigo do header que foi realocado/aposentado */
+  #legendToggle { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .drawer { transition: none; transform: none; }
+    #camadasPanel .cam-chev { transition: none; }
   }
 </style>
 </head>
@@ -993,6 +1095,31 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <button id="clearAllPhotosBtn" class="btn btn--danger-ghost btn--block">Limpar todas as fotos</button>
 </div>
 
+<!-- Painel "Camadas" (centro de controle do mapa). Rehospedado no drawer via PANELS.
+     Os nós existentes (#toggleBtn, #layerFilters, #legend) são movidos para os slots
+     abaixo por appendChild — preservando ids/handlers/listeners. -->
+<div id="camadasPanel">
+  <h3>Camadas</h3>
+  <div class="cam-search">
+    <span class="cam-search-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+    <input id="camBusca" type="search" placeholder="Buscar camadas ou regiões…" aria-label="Buscar camadas ou regiões" autocomplete="off">
+  </div>
+  <div class="cam-allbtns">
+    <button id="camLigarTudo" type="button" class="cam-allbtn">Ligar tudo</button>
+    <button id="camDesligarTudo" type="button" class="cam-allbtn">Desligar</button>
+  </div>
+  <div class="cam-titulos-row" id="camTitulosSlot"><!-- #toggleBtn movido para cá --></div>
+  <div id="camLayersSlot"><!-- #layerFilters movido para cá --></div>
+  <div class="cam-group" id="camGrupoRegioes" data-cam-group>
+    <button class="cam-group-head" type="button" aria-expanded="false">Regiões <span class="cam-count" id="camRegCount"></span><span class="cam-chev" aria-hidden="true">▾</span></button>
+    <div class="cam-group-body" id="camRegioesSlot"><!-- #legend movido para cá --></div>
+  </div>
+  <div class="cam-empty" id="camEmpty" hidden>
+    <p>Nenhuma camada encontrada.</p>
+    <button id="camLimpar" type="button" class="btn btn--secondary">Limpar busca</button>
+  </div>
+</div>
+
 <div id="header">
   <div>
     <h1>Monitoramento das Regiões</h1>
@@ -1015,19 +1142,29 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     <div class="controlGroup" id="camadasGroup">
       <button class="controlLabel" id="camadasToggle" type="button">Camadas <span class="chev">▾</span></button>
       <div id="layerFilters">
-        <button id="fltToggleAll" type="button" title="Ligar/desligar todas">Tudo</button>
-        <span class="flt-grp">Dados</span>
-        <label><input type="checkbox" id="fltSecoes"><span class="flt-dot" style="background:#e8590c"></span> Seções</label>
-        <label><input type="checkbox" id="fltRest"> 🍽 Restaurantes</label>
-        <label><input type="checkbox" id="fltFam"><span class="flt-dot" style="background:#1565c0"></span> Famílias</label>
-        <label><input type="checkbox" id="fltFac"> 🏥 Facilidades</label>
-        <span class="flt-grp">Marcações</span>
-        <label><input type="checkbox" id="fltZona"><span class="flt-dot" style="background:#d32f2f"></span> Zona quente</label>
-        <label><input type="checkbox" id="fltOnda"><span class="flt-dot" style="background:#1565c0"></span> Onda Azul</label>
-        <label><input type="checkbox" id="fltPassar"><span class="flt-dot" style="background:#000"></span> Onde irá passar</label>
-        <label><input type="checkbox" id="fltCarreata"><span class="flt-dot" style="background:#6a1b9a"></span> Carreatas</label>
-        <label><input type="checkbox" id="fltAreas"><span class="flt-dot" style="background:#888; border-radius:3px"></span> Áreas</label>
-        <label><input type="checkbox" id="fltFotos"> 📷 Fotos</label>
+        <!-- #fltToggleAll preservado (lógica intacta); oculto na UI, os botões
+             Ligar/Desligar do painel reusam o mesmo mecanismo via helper. -->
+        <button id="fltToggleAll" type="button" title="Ligar/desligar todas" class="cam-legacy">Tudo</button>
+        <div class="cam-group" data-cam-group>
+          <button class="cam-group-head" type="button" aria-expanded="true">Dados <span class="cam-chev" aria-hidden="true">▾</span></button>
+          <div class="cam-group-body">
+            <label class="cam-item"><input type="checkbox" id="fltSecoes"><span class="flt-dot" style="background:#e8590c"></span> Seções</label>
+            <label class="cam-item"><input type="checkbox" id="fltRest"><span class="flt-dot" style="background:#e8590c"></span> Restaurantes</label>
+            <label class="cam-item"><input type="checkbox" id="fltFam"><span class="flt-dot" style="background:#1565c0"></span> Famílias</label>
+            <label class="cam-item"><input type="checkbox" id="fltFac"><span class="flt-dot" style="background:#3a7bd5"></span> Facilidades</label>
+          </div>
+        </div>
+        <div class="cam-group" data-cam-group>
+          <button class="cam-group-head" type="button" aria-expanded="true">Marcações <span class="cam-chev" aria-hidden="true">▾</span></button>
+          <div class="cam-group-body">
+            <label class="cam-item"><input type="checkbox" id="fltZona"><span class="flt-dot" style="background:#d32f2f"></span> Zona quente</label>
+            <label class="cam-item"><input type="checkbox" id="fltOnda"><span class="flt-dot" style="background:#1565c0"></span> Onda Azul</label>
+            <label class="cam-item"><input type="checkbox" id="fltPassar"><span class="flt-dot" style="background:#000"></span> Onde irá passar</label>
+            <label class="cam-item"><input type="checkbox" id="fltCarreata"><span class="flt-dot" style="background:#6a1b9a"></span> Carreatas</label>
+            <label class="cam-item"><input type="checkbox" id="fltAreas"><span class="flt-dot" style="background:#888; border-radius:3px"></span> Áreas</label>
+            <label class="cam-item"><input type="checkbox" id="fltFotos"><span class="flt-dot" style="background:#3a7bd5"></span> Fotos</label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1497,19 +1634,92 @@ document.getElementById('toggleBtn').addEventListener('click', function() {
   });
 });
 
-// Camadas recolhível (no mobile)
+// Mecanismo ÚNICO de ligar/desligar camadas (usado pelo #fltToggleAll e pelos
+// botões Ligar/Desligar do painel). Preserva o seletor contextual e os eventos change.
+function aplicarTodasCamadas(ligar) {
+  const boxes = document.querySelectorAll('#layerFilters input[type=checkbox]');
+  Array.prototype.forEach.call(boxes, function(b) {
+    if (b.checked !== ligar) { b.checked = ligar; b.dispatchEvent(new Event('change')); }
+  });
+}
+
+// #camadasToggle readaptado: agora abre/fecha o painel Camadas no drawer
+// (mesmo padrão dos demais toggles: alterna a classe .open do painel).
 document.getElementById('camadasToggle').addEventListener('click', function() {
-  this.classList.toggle('aberto');
-  document.getElementById('layerFilters').classList.toggle('aberto');
+  const p = document.getElementById('camadasPanel');
+  if (p) p.classList.toggle('open');
 });
 
-// Botão Tudo/Nenhum das camadas
+// #fltToggleAll preservado (comportamento idêntico), apenas roteado pelo helper.
 document.getElementById('fltToggleAll').addEventListener('click', function() {
   const boxes = Array.prototype.slice.call(document.querySelectorAll('#layerFilters input[type=checkbox]'));
   const alvo = !boxes.some(function(b) { return b.checked; });
-  boxes.forEach(function(b) { if (b.checked !== alvo) { b.checked = alvo; b.dispatchEvent(new Event('change')); } });
+  aplicarTodasCamadas(alvo);
   this.textContent = alvo ? 'Nenhum' : 'Tudo';
 });
+
+// ---- Painel Camadas: mover nós existentes para os slots + busca + grupos + Ligar/Desligar ----
+(function() {
+  const panel = document.getElementById('camadasPanel');
+  if (!panel) return;
+
+  // 1) Rehospeda os nós existentes (preserva ids/handlers/listeners)
+  const toggleBtn = document.getElementById('toggleBtn');
+  const layerFilters = document.getElementById('layerFilters');
+  const legend = document.getElementById('legend');
+  const tSlot = document.getElementById('camTitulosSlot');
+  const lSlot = document.getElementById('camLayersSlot');
+  const rSlot = document.getElementById('camRegioesSlot');
+  if (toggleBtn && tSlot) tSlot.appendChild(toggleBtn);
+  if (layerFilters && lSlot) lSlot.appendChild(layerFilters);
+  if (legend && rSlot) rSlot.appendChild(legend);
+
+  // 2) Botões Ligar/Desligar tudo → mesmo mecanismo (helper)
+  const bOn = document.getElementById('camLigarTudo');
+  const bOff = document.getElementById('camDesligarTudo');
+  if (bOn) bOn.addEventListener('click', function() { aplicarTodasCamadas(true); });
+  if (bOff) bOff.addEventListener('click', function() { aplicarTodasCamadas(false); });
+
+  // 3) Grupos colapsáveis (Dados, Marcações, Regiões)
+  panel.addEventListener('click', function(e) {
+    const head = e.target.closest ? e.target.closest('.cam-group-head') : null;
+    if (!head || !panel.contains(head)) return;
+    const grp = head.parentNode;
+    const aberto = !grp.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+  });
+
+  // 4) Busca: SOMENTE filtro visual sobre o DOM (não altera checked/nós/listeners)
+  function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  const busca = document.getElementById('camBusca');
+  const empty = document.getElementById('camEmpty');
+  const items = function() {
+    return Array.prototype.slice.call(panel.querySelectorAll('#layerFilters .cam-item, #legend > span'));
+  };
+  function filtrar() {
+    const q = norm(busca ? busca.value.trim() : '');
+    panel.classList.toggle('cam-searching', q.length > 0);
+    let visiveis = 0;
+    items().forEach(function(el) {
+      const hit = q === '' || norm(el.textContent).indexOf(q) !== -1;
+      el.classList.toggle('cam-hidden', !hit);
+      if (hit) visiveis++;
+    });
+    // Grupos sem itens visíveis: recolhe/oculta visualmente
+    Array.prototype.slice.call(panel.querySelectorAll('.cam-group')).forEach(function(grp) {
+      const vis = grp.querySelectorAll('.cam-item:not(.cam-hidden), #legend > span:not(.cam-hidden)').length;
+      grp.classList.toggle('cam-group-empty', q !== '' && vis === 0);
+    });
+    if (empty) empty.hidden = !(q !== '' && visiveis === 0);
+  }
+  if (busca) busca.addEventListener('input', filtrar);
+  const limpar = document.getElementById('camLimpar');
+  if (limpar) limpar.addEventListener('click', function() { if (busca) { busca.value = ''; filtrar(); busca.focus(); } });
+
+  // 5) Contador de regiões (informativo, não altera dados)
+  const regCount = document.getElementById('camRegCount');
+  if (regCount && legend) regCount.textContent = '(' + legend.querySelectorAll(':scope > span').length + ')';
+})();
 
 // Legenda recolhível
 (function() {
@@ -3182,13 +3392,15 @@ const Store = {
     pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><path d="M12 8v5M9.5 10.5h5"/></svg>',
     chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>',
     up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M12 15V3M7 8l5-5 5 5"/></svg>',
-    x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+    x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>'
   };
   var PANELS = [
     { id: 'drawPanel',     toggle: 'drawToggleBtn',   title: 'Marcar ruas',         icon: ICO.pen },
     { id: 'photoPanel',    toggle: 'photoToggleBtn',  title: 'Fotos',               icon: ICO.image },
     { id: 'facPanel',      toggle: 'facToggleBtn',    title: 'Facilidades',         icon: ICO.pin },
     { id: 'votersPanel',   toggle: 'votersToggleBtn', title: 'Eleitorado',          icon: ICO.chart },
+    { id: 'camadasPanel',  toggle: 'camadasToggle',   title: 'Camadas',             icon: ICO.layers },
     { id: 'saveModsPanel', toggle: 'saveModsBtn',     title: 'Publicar alterações', icon: ICO.up }
   ];
 
