@@ -604,7 +604,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #accLogoutBtn:hover { background: rgba(255,255,255,0.18); }
 
   /* ===== Zoom + rotação flutuando no mapa ===== */
-  #mapControls { position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+  #mapControls { position: absolute; top: 12px; right: 12px; left: auto; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
   #mapControls .mc-zoom, #mapControls .mc-rot {
     display: flex; flex-direction: column; background: #fff; border-radius: 10px;
     overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.25);
@@ -670,7 +670,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #drawToggleBtn .fab-ico, #photoToggleBtn .fab-ico, #votersToggleBtn .fab-ico { font-size: 20px; }
     #photoToggleBtn { left: 64px; }
     #mapControls button { width: 42px; height: 42px; }
-    #mapControls { top: 10px; left: 10px; }
+    #mapControls { top: 10px; right: 10px; left: auto; }
   }
   body:not(.authed) #facToggleBtn { visibility: hidden; }
   /* Barra dos botões de marcar (embaixo à esquerda) — espaça sozinho, sem sobrepor */
@@ -818,6 +818,65 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   }
   #drawBar button.primary { background: #2e7d32; color: #fff; }
   #drawBar button:hover { filter: brightness(1.06); }
+
+  /* ============================================================
+     DRAWER ÚNICO — Etapa 3. Container reutilizável que rehospeda
+     os 5 painéis existentes (via JS appendChild). z-index no mesmo
+     nível que os painéis tinham (2999), preservando a ordem relativa
+     ao Leaflet(~1000)/FABs(3000)/drawBar(3100)/menu(3200)/modais(6000).
+     ============================================================ */
+  .drawer {
+    position: fixed; left: 10px; bottom: 66px; z-index: 2999;
+    width: min(320px, calc(100vw - 20px));
+    max-height: calc(100vh - 150px);
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    opacity: 0; visibility: hidden; transform: translateX(-8px); pointer-events: none;
+    transition: opacity var(--t-base), transform var(--t-base), visibility var(--t-base);
+  }
+  .drawer.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+  .drawer-header {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+  }
+  .drawer-ico { display: inline-flex; align-items: center; color: var(--navy); flex: 0 0 auto; }
+  .drawer-ico svg { width: 18px; height: 18px; display: block; }
+  .drawer-title {
+    flex: 1 1 auto; font-size: var(--fs-14); font-weight: var(--fw-bold);
+    color: var(--navy); line-height: var(--lh-tight);
+  }
+  .drawer-close {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border: none; border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  .drawer-close:hover { background: var(--surface-3); color: var(--text); }
+  .drawer-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .drawer-close svg { width: 16px; height: 16px; display: block; }
+  .drawer-body { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-3); color: var(--text); }
+  /* o título do drawer substitui o <h3> interno de cada painel */
+  .drawer-body h3 { display: none; }
+  .drawer-footer {
+    flex: 0 0 auto; display: none; gap: var(--sp-2); padding: var(--sp-3);
+    border-top: 1px solid var(--border);
+  }
+
+  /* RESET dos painéis rehospedados: removem o "cartão flutuante" próprio
+     (vem depois das regras-base = mesma especificidade, vence). Mantém
+     display:none / .open{display:block} e o conteúdo intactos. */
+  #drawPanel, #photoPanel, #facPanel, #votersPanel, #saveModsPanel {
+    position: static; inset: auto; left: auto; right: auto; top: auto; bottom: auto;
+    width: auto; max-height: none; z-index: auto;
+    background: transparent; box-shadow: none; border-radius: 0; padding: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer { transition: none; transform: none; }
+  }
 </style>
 </head>
 <body class="">
@@ -3094,5 +3153,126 @@ const Store = {
 </script>
 
 
+
+<script>
+/* ============================================================
+   DRAWER ÚNICO — camada intermediária (Etapa 3).
+   NÃO altera lógica de negócio. Apenas:
+   - rehospeda os 5 painéis existentes dentro de um container único
+     (move os nós via appendChild → preserva IDs/listeners/inputs);
+   - mostra/oculta o drawer conforme o painel ativo (.open e não .recolhido);
+   - garante que só um painel fique visível por vez (fecha os demais
+     acionando o TOGGLE existente de cada um — reaproveita a limpeza nativa);
+   - atualiza título/ícone do cabeçalho;
+   - fecha por botão X e por Escape (aciona o mesmo caminho de fechar).
+   ============================================================ */
+(function () {
+  var ICO = {
+    pen:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+    pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><path d="M12 8v5M9.5 10.5h5"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>',
+    up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M12 15V3M7 8l5-5 5 5"/></svg>',
+    x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+  };
+  var PANELS = [
+    { id: 'drawPanel',     toggle: 'drawToggleBtn',   title: 'Marcar ruas',         icon: ICO.pen },
+    { id: 'photoPanel',    toggle: 'photoToggleBtn',  title: 'Fotos',               icon: ICO.image },
+    { id: 'facPanel',      toggle: 'facToggleBtn',    title: 'Facilidades',         icon: ICO.pin },
+    { id: 'votersPanel',   toggle: 'votersToggleBtn', title: 'Eleitorado',          icon: ICO.chart },
+    { id: 'saveModsPanel', toggle: 'saveModsBtn',     title: 'Publicar alterações', icon: ICO.up }
+  ];
+
+  var drawer = document.createElement('div');
+  drawer.className = 'drawer';
+  drawer.id = 'appDrawer';
+  drawer.setAttribute('role', 'dialog');
+  drawer.setAttribute('aria-modal', 'false');
+  drawer.setAttribute('aria-labelledby', 'drawerTitle');
+  drawer.innerHTML =
+    '<div class="drawer-header">' +
+      '<span class="drawer-ico" id="drawerIco" aria-hidden="true"></span>' +
+      '<span class="drawer-title" id="drawerTitle"></span>' +
+      '<button class="drawer-close" id="drawerClose" type="button" aria-label="Fechar" title="Fechar">' + ICO.x + '</button>' +
+    '</div>' +
+    '<div class="drawer-body" id="drawerBody"></div>';
+  document.body.appendChild(drawer);
+
+  var body = document.getElementById('drawerBody');
+  var titleEl = document.getElementById('drawerTitle');
+  var icoEl = document.getElementById('drawerIco');
+
+  // Rehospeda os painéis existentes (move o nó; listeners/IDs preservados)
+  PANELS.forEach(function (p) {
+    var el = document.getElementById(p.id);
+    if (el) body.appendChild(el);
+  });
+
+  function byId(id) { return document.getElementById(id); }
+  function isOpen(id) { var el = byId(id); return !!(el && el.classList.contains('open')); }
+  function isRecolhido(id) { var el = byId(id); return !!(el && el.classList.contains('recolhido')); }
+
+  var lastOpenedId = null;
+  var suppress = false;
+
+  // painel "ativo" = aberto e não recolhido (recolhido = fluxo de desenho)
+  function activePanel() {
+    if (lastOpenedId && isOpen(lastOpenedId) && !isRecolhido(lastOpenedId)) {
+      return PANELS.filter(function (p) { return p.id === lastOpenedId; })[0];
+    }
+    for (var i = 0; i < PANELS.length; i++) {
+      if (isOpen(PANELS[i].id) && !isRecolhido(PANELS[i].id)) return PANELS[i];
+    }
+    return null;
+  }
+
+  function sync() {
+    // Um por vez: se houver mais de um aberto, fecha os demais pelo TOGGLE nativo
+    var openOnes = PANELS.filter(function (p) { return isOpen(p.id); });
+    if (openOnes.length > 1) {
+      var keepId = (lastOpenedId && isOpen(lastOpenedId)) ? lastOpenedId : openOnes[openOnes.length - 1].id;
+      suppress = true;
+      openOnes.forEach(function (p) {
+        if (p.id !== keepId) { var t = byId(p.toggle); if (t) t.click(); }
+      });
+      suppress = false;
+    }
+    var act = activePanel();
+    if (act) {
+      titleEl.textContent = act.title;
+      icoEl.innerHTML = act.icon;
+      drawer.classList.add('open');
+    } else {
+      drawer.classList.remove('open');
+    }
+  }
+
+  var obs = new MutationObserver(function (muts) {
+    if (suppress) return;
+    muts.forEach(function (m) {
+      if (m.target.classList && m.target.classList.contains('open')) lastOpenedId = m.target.id;
+    });
+    sync();
+  });
+  PANELS.forEach(function (p) {
+    var el = byId(p.id);
+    if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  // Fechar: reaproveita o toggle existente do painel ativo (limpeza nativa)
+  function closeActive() {
+    var act = activePanel();
+    if (act) { var t = byId(act.toggle); if (t) t.click(); }
+  }
+  byId('drawerClose').addEventListener('click', closeActive);
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.key === 'Esc') && drawer.classList.contains('open')) {
+      closeActive();
+    }
+  });
+
+  sync();
+})();
+</script>
 
 </body></html>
