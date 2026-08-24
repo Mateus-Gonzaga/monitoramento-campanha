@@ -26,6 +26,81 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 </script>
 <style>
   * { box-sizing: border-box; }
+  /* ============================================================
+     DESIGN TOKENS — Etapa 1 do redesign (fundação).
+     Apenas DEFINE variáveis; nenhum seletor as consome ainda,
+     portanto não há mudança visual nem de comportamento.
+     A aplicação dos tokens acontece nas etapas seguintes.
+     ============================================================ */
+  :root {
+    /* -- Identidade (navy) -- */
+    --navy: #1a3a5c;
+    --navy-hover: #24537f;
+    --navy-deep: #153050;
+    /* -- Ação / azul funcional -- */
+    --accent: #2b6cb0;
+    --accent-soft: #eaf1f8;
+    /* -- Superfícies -- */
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --surface-3: #eef2f7;
+    /* -- Bordas -- */
+    --border: #e5e9f0;
+    --border-strong: #d7dee8;
+    /* -- Texto -- */
+    --text: #1f2733;
+    --text-muted: #5b6675;
+    --text-faint: #8a94a3;
+    /* -- Semânticas (feedback) -- */
+    --success: #2e7d32;
+    --danger: #b83227;
+    --warning: #b8730c;
+    --info: var(--navy);
+    /* -- Cores de DADO (marcações/regiões) — espelham valores já usados,
+          NÃO devem ser reestilizadas; existem aqui só para referência -- */
+    --data-zona: #d32f2f;
+    --data-onda: #1565c0;
+    --data-passar: #000000;
+    --data-carreata: #6a1b9a;
+    --data-restaurante: #e8590c;
+    --data-regiao: #2e7d32;
+
+    /* -- Tipografia -- */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px;
+    --fw-regular: 400; --fw-semibold: 600; --fw-bold: 700;
+    --lh-tight: 1.3; --lh-base: 1.45;
+
+    /* -- Espaçamento (régua 4) -- */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+
+    /* -- Raio -- */
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+
+    /* -- Sombras (leves, 1 por contexto) -- */
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
+    --shadow-md: 0 4px 12px rgba(16,24,40,.10);
+    --shadow-lg: 0 12px 32px rgba(16,24,40,.14);
+
+    /* -- Transições -- */
+    --t-fast: 120ms ease-out;
+    --t-base: 200ms ease-out;
+
+    /* -- Escala de z-index (definida; aplicada só nas etapas seguintes,
+          preservando a ordem relativa atual e nunca afundando sob os
+          controles do Leaflet ~1000) -- */
+    --z-map-controls: 1000;
+    --z-drawer: 1100;
+    --z-toolbar: 1150;
+    --z-topbar: 1200;
+    --z-dropdown: 1300;
+    --z-toast: 1400;
+    --z-overlay: 1450;
+    --z-modal: 1500;
+
+    /* -- Foco -- */
+    --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--navy);
+  }
   html, body { height: 100%; }
   body {
     margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
