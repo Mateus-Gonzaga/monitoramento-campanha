@@ -837,6 +837,14 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     transition: opacity var(--t-base), transform var(--t-base), visibility var(--t-base);
   }
   .drawer.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+  /* Scrim do bottom-sheet (mobile). Base oculta; z abaixo do dock (2000) e do drawer
+     (2999), acima do mapa/#mapControls — o dock segue clicável para trocar de ferramenta. */
+  #drawerScrim {
+    position: fixed; inset: 0; z-index: 1500; background: rgba(16,24,40,.38);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity var(--t-base), visibility var(--t-base);
+  }
+  #drawerScrim.show { pointer-events: auto; }
   .drawer-header {
     display: flex; align-items: center; gap: var(--sp-2);
     padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--border);
@@ -1076,7 +1084,24 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #toolbar .tb-item.active::before { display: none; }
     #toolbar .tb-item.active { border-radius: var(--radius-sm); }
     #toolbar .tb-collapse { display: none; }  /* dock sempre visível no mobile */
-    .drawer, body.tb-collapsed .drawer { left: 10px; right: 10px; width: auto; bottom: calc(72px + env(safe-area-inset-bottom)); }
+    /* Drawer vira BOTTOM-SHEET (sobe de baixo), acima do dock, com pega e cantos arredondados */
+    .drawer, body.tb-collapsed .drawer {
+      left: 0; right: 0; top: auto; width: auto; max-width: none;
+      bottom: calc(60px + env(safe-area-inset-bottom));
+      /* teto abaixo dos controles Leaflet (topo-direito) para não sobrepor */
+      max-height: min(70vh, calc(100vh - 340px));
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border-bottom: none; border-left: none; border-right: none;
+      transform: translateY(110%);
+    }
+    .drawer.open { transform: translateY(0); }
+    .drawer::before {
+      content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      width: 38px; height: 4px; border-radius: 2px; background: var(--border); z-index: 1;
+    }
+    .drawer-header { padding-top: 18px; }  /* espaço para a pega */
+    /* Scrim (só no mobile): fecha ao tocar fora; abaixo do dock (dock segue clicável) */
+    #drawerScrim.show { opacity: 1; visibility: visible; }
   }
 
   /* ===================== TOASTS (Etapa 6) ===================== */
@@ -1150,6 +1175,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     #camadasPanel .cam-chev, #toolbar, #toolbar .tb-collapse-ico { transition: none; }
     .toast { transition: opacity var(--t-base); transform: none; }
     .toast-spin, .loading-state::before { animation: none; }
+    #drawerScrim { transition: none; }
   }
 </style>
 </head>
@@ -3846,6 +3872,27 @@ const Store = {
     if (logout && logout.parentNode === dd) dd.insertBefore(saveBtn, logout);
     else dd.appendChild(saveBtn);
   }
+})();
+
+/* ============================================================
+   ETAPA 7 — Scrim do bottom-sheet (mobile). Só apresentação: reflete o
+   .open do #appDrawer e, ao tocar fora, aciona o caminho de fechar já
+   existente (#drawerClose). Não recria listeners nem toca no sync()/closeActive.
+   ============================================================ */
+(function () {
+  var drawer = document.getElementById('appDrawer');
+  if (!drawer) return;
+  var scrim = document.createElement('div');
+  scrim.id = 'drawerScrim';
+  scrim.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(scrim);
+  function refletir() { scrim.classList.toggle('show', drawer.classList.contains('open')); }
+  new MutationObserver(refletir).observe(drawer, { attributes: true, attributeFilter: ['class'] });
+  scrim.addEventListener('click', function () {
+    var close = document.getElementById('drawerClose');
+    if (close) close.click();
+  });
+  refletir();
 })();
 </script>
 
