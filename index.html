@@ -850,7 +850,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   }
   .drawer-close {
     flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; border: none; border-radius: var(--radius-sm);
+    width: 40px; height: 40px; border: none; border-radius: var(--radius-sm);
     background: transparent; color: var(--text-muted); cursor: pointer;
     transition: background var(--t-fast), color var(--t-fast);
   }
@@ -858,8 +858,17 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   .drawer-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
   .drawer-close svg { width: 16px; height: 16px; display: block; }
   .drawer-body { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-3); color: var(--text); }
-  /* o título do drawer substitui o <h3> interno de cada painel */
-  .drawer-body h3 { display: none; }
+  /* Utilitário: esconde visualmente mas mantém para leitores de tela */
+  .sr-only {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  /* O drawer já tem título visível próprio; o <h3> interno vira semântico
+     (invisível na tela, preservado no leitor de tela). */
+  .drawer-body h3 {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
   .drawer-footer {
     flex: 0 0 auto; display: none; gap: var(--sp-2); padding: var(--sp-3);
     border-top: 1px solid var(--border);
@@ -3173,7 +3182,7 @@ const Store = {
     pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><path d="M12 8v5M9.5 10.5h5"/></svg>',
     chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>',
     up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M12 15V3M7 8l5-5 5 5"/></svg>',
-    x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+    x:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg>'
   };
   var PANELS = [
     { id: 'drawPanel',     toggle: 'drawToggleBtn',   title: 'Marcar ruas',         icon: ICO.pen },
@@ -3193,7 +3202,7 @@ const Store = {
     '<div class="drawer-header">' +
       '<span class="drawer-ico" id="drawerIco" aria-hidden="true"></span>' +
       '<span class="drawer-title" id="drawerTitle"></span>' +
-      '<button class="drawer-close" id="drawerClose" type="button" aria-label="Fechar" title="Fechar">' + ICO.x + '</button>' +
+      '<button class="drawer-close" id="drawerClose" type="button" aria-label="Fechar painel" title="Fechar painel">' + ICO.x + '<span class="sr-only">Fechar painel</span></button>' +
     '</div>' +
     '<div class="drawer-body" id="drawerBody"></div>';
   document.body.appendChild(drawer);
