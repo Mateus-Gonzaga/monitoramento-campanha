@@ -1079,13 +1079,169 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     .drawer, body.tb-collapsed .drawer { left: 10px; right: 10px; width: auto; bottom: calc(72px + env(safe-area-inset-bottom)); }
   }
 
+  /* ===================== TOASTS (Etapa 6) ===================== */
+  #toastHost {
+    position: fixed; right: 16px; bottom: 16px; z-index: 7000;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+    max-width: min(380px, calc(100vw - 24px)); pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto; display: flex; align-items: flex-start; gap: 10px;
+    width: 100%; box-sizing: border-box; padding: 11px 12px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-left: 3px solid var(--text-muted);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+    font-size: var(--fs-13); line-height: var(--lh-tight);
+    opacity: 0; transform: translateY(8px); transition: opacity var(--t-base), transform var(--t-base);
+  }
+  .toast.in { opacity: 1; transform: none; }
+  .toast.out { opacity: 0; transform: translateY(8px); }
+  .toast-ico { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; }
+  .toast-ico svg { width: 18px; height: 18px; display: block; }
+  .toast-msg { flex: 1 1 auto; padding-top: 1px; }
+  .toast-close {
+    flex: 0 0 auto; width: 28px; height: 28px; margin: -4px -2px -4px 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: var(--radius-sm);
+    color: var(--text-muted); cursor: pointer;
+  }
+  .toast-close svg { width: 15px; height: 15px; }
+  .toast-close:hover { background: var(--surface-3); color: var(--text); }
+  .toast-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .toast--success { border-left-color: var(--success); }
+  .toast--success .toast-ico { color: var(--success); }
+  .toast--error   { border-left-color: var(--danger); }
+  .toast--error .toast-ico { color: var(--danger); }
+  .toast--warning { border-left-color: var(--warning); }
+  .toast--warning .toast-ico { color: var(--warning); }
+  .toast--info    { border-left-color: var(--navy); }
+  .toast--info .toast-ico { color: var(--navy); }
+  .toast--loading { border-left-color: var(--navy); }
+  .toast--loading .toast-ico { color: var(--navy); }
+  .toast-spin { animation: toastspin 0.9s linear infinite; transform-origin: 50% 50%; }
+  @keyframes toastspin { to { transform: rotate(360deg); } }
+  @media (max-width: 640px) {
+    #toastHost {
+      left: 10px; right: 10px; bottom: calc(72px + env(safe-area-inset-bottom));
+      max-width: none; align-items: stretch;
+    }
+  }
+
+  /* Estados vazio / carregando reutilizáveis */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-align: center; color: var(--text-muted); font-size: var(--fs-13);
+    padding: var(--sp-4) var(--sp-3); line-height: 1.45;
+  }
+  .empty-state .empty-ico { width: 26px; height: 26px; opacity: .7; }
+  .empty-state .empty-ico svg { width: 26px; height: 26px; display: block; }
+  .loading-state {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: var(--text-muted); font-size: var(--fs-13); padding: var(--sp-4) var(--sp-3);
+  }
+  .loading-state::before {
+    content: ""; width: 15px; height: 15px; flex: 0 0 auto;
+    border: 2px solid var(--border); border-top-color: var(--navy); border-radius: 50%;
+    animation: toastspin 0.8s linear infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .drawer { transition: none; transform: none; }
     #camadasPanel .cam-chev, #toolbar, #toolbar .tb-collapse-ico { transition: none; }
+    .toast { transition: opacity var(--t-base); transform: none; }
+    .toast-spin, .loading-state::before { animation: none; }
   }
 </style>
 </head>
 <body class="">
+
+<script>
+/* ============================================================
+   TOASTS (Etapa 6) — camada de APRESENTAÇÃO. Não toca em Supabase/
+   Leaflet/persistência; só exibe mensagens de estado já produzidas
+   pela lógica existente. aria-live (polite) + role=alert p/ erros.
+   window.toast(msg, type, opts) -> { update(msg,type), dismiss() }
+   ============================================================ */
+(function () {
+  var host = null;
+  function ensureHost() {
+    if (host && document.body.contains(host)) return host;
+    host = document.createElement('div');
+    host.id = 'toastHost';
+    host.setAttribute('aria-live', 'polite');
+    host.setAttribute('aria-relevant', 'additions text');
+    document.body.appendChild(host);
+    return host;
+  }
+  var S = 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  var ICONS = {
+    success: '<svg viewBox="0 0 24 24" fill="none" ' + S + '><path d="M20 6 9 17l-5-5"/></svg>',
+    error:   '<svg viewBox="0 0 24 24" fill="none" ' + S + '><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" fill="none" ' + S + '><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+    info:    '<svg viewBox="0 0 24 24" fill="none" ' + S + '><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+    loading: '<svg class="toast-spin" viewBox="0 0 24 24" fill="none" ' + S + '><path d="M21 12a9 9 0 1 1-6.2-8.5"/></svg>'
+  };
+  var CLOSE = '<svg viewBox="0 0 24 24" fill="none" ' + S + ' aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  var DUR = { success: 3200, info: 4000, warning: 5000 }; // error/loading = sem auto-dismiss
+
+  window.toast = function (message, type, opts) {
+    type = type || 'info'; opts = opts || {};
+    var h = ensureHost();
+    var el = document.createElement('div');
+    el.className = 'toast toast--' + type;
+    if (type === 'error') el.setAttribute('role', 'alert'); // assertivo p/ erros
+    el.innerHTML =
+      '<span class="toast-ico" aria-hidden="true">' + (ICONS[type] || ICONS.info) + '</span>' +
+      '<span class="toast-msg"></span>' +
+      '<button class="toast-close" type="button" aria-label="Fechar aviso">' + CLOSE + '</button>';
+    el.querySelector('.toast-msg').textContent = message;
+    h.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('in'); });
+
+    var timer = null;
+    function dismiss() {
+      if (el._done) return; el._done = true;
+      if (timer) { clearTimeout(timer); timer = null; }
+      el.classList.remove('in'); el.classList.add('out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 240);
+    }
+    function schedule() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      var d = (opts.duration != null) ? opts.duration : DUR[type];
+      if (d) timer = setTimeout(dismiss, d);
+    }
+    el.querySelector('.toast-close').addEventListener('click', dismiss);
+    schedule();
+    return {
+      el: el,
+      update: function (msg, newType) {
+        if (el._done) return;
+        el.querySelector('.toast-msg').textContent = msg;
+        if (newType) {
+          type = newType;
+          el.className = 'toast toast--' + newType + ' in';
+          el.querySelector('.toast-ico').innerHTML = ICONS[newType] || ICONS.info;
+          if (newType === 'error') el.setAttribute('role', 'alert'); else el.removeAttribute('role');
+          schedule();
+        }
+      },
+      dismiss: dismiss
+    };
+  };
+
+  // Escape fecha o toast mais recente. Fase de captura + stopImmediatePropagation
+  // para NÃO acionar o Escape do drawer quando houver toast na tela.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    if (!host) return;
+    var abertos = host.querySelectorAll('.toast:not(.out)');
+    if (!abertos.length) return;
+    var btn = abertos[abertos.length - 1].querySelector('.toast-close');
+    if (btn) btn.click();
+    e.stopImmediatePropagation();
+  }, true);
+})();
+</script>
 
 <div id="authOverlay">
   <div class="authCard">
@@ -1524,7 +1680,7 @@ window.__deleteFacilidade = function(dbId) {
   facilidades.splice(idx, 1);
   if (DB_MODE && dbId) {
     SB.from('facilidades').delete().eq('id', dbId).then(function(res) {
-      if (res.error) alert('Erro ao apagar no banco: ' + res.error.message);
+      if (res.error) toast('Erro ao apagar no banco: ' + res.error.message, 'error');
     });
   }
 };
@@ -1556,7 +1712,7 @@ window.__deleteFacilidade = function(dbId) {
   });
   document.getElementById('facPlaceBtn').addEventListener('click', function() {
     const regiao = document.getElementById('facRegion').value;
-    if (!regiao) { alert('Selecione a região da facilidade.'); return; }
+    if (!regiao) { toast('Selecione a região da facilidade.', 'warning'); return; }
     pendingFac = { tipo: document.getElementById('facTipo').value, regiao: regiao };
     document.getElementById('facStatus').textContent = '📍 Clique no mapa para posicionar.';
     facPanel.classList.add('recolhido');
@@ -1571,12 +1727,16 @@ window.__deleteFacilidade = function(dbId) {
     logAudit('criou_facilidade', nome, regiao);
     cancelPendingFac(); facPanel.classList.remove('open'); facToggleBtn.classList.remove('active');
     if (DB_MODE) {
+      const tFac = toast('Salvando facilidade…', 'loading');
       SB.from('facilidades').insert({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, criado_por: AuthState.user.id })
         .select('id').single().then(function(res) {
           facilidadesLayer.removeLayer(entry.marker);
           const i = facilidades.indexOf(entry); if (i >= 0) facilidades.splice(i, 1);
-          if (res.error) alert('Erro ao salvar facilidade: ' + res.error.message);
-          else addFacilidadeToMap({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, dbId: res.data.id });
+          if (res.error) { tFac.update('Erro ao salvar facilidade: ' + res.error.message, 'error'); }
+          else {
+            tFac.update('Facilidade salva.', 'success');
+            addFacilidadeToMap({ tipo: tipo, nome: nome, regiao: regiao, lat: lat, lng: lng, dbId: res.data.id });
+          }
         });
     }
   });
@@ -2055,7 +2215,7 @@ window.__saveRouteEdit = function(id) {
 
   if (DB_MODE && route.dbId) {
     Store.updateRouteTitles(route).catch(function(e) {
-      alert('Erro ao salvar a edição no banco: ' + (e.message || e));
+      toast('Erro ao salvar a edição no banco: ' + (e.message || e), 'error');
     });
   }
 };
@@ -2095,7 +2255,7 @@ function deleteRoute(id) {
   renderRoutesList();
   if (DB_MODE && dbId) {
     Store.deleteRoute(dbId).catch(function(e) {
-      alert('Erro ao apagar no banco: ' + (e.message || e));
+      toast('Erro ao apagar no banco: ' + (e.message || e), 'error');
     });
   }
 }
@@ -2289,11 +2449,11 @@ document.getElementById('cancelLineBtn').addEventListener('click', function() { 
 document.getElementById('finishLineBtn').addEventListener('click', function() {
   if (currentPoints.length < 2) return;
   const isArea = document.getElementById('areaMode').checked;
-  if (isArea && currentPoints.length < 3) { alert('Uma área precisa de pelo menos 3 pontos.'); return; }
+  if (isArea && currentPoints.length < 3) { toast('Uma área precisa de pelo menos 3 pontos.', 'warning'); return; }
   let routeRegiao = null;
   if (DB_MODE) {
     routeRegiao = document.getElementById('drawRegion').value;
-    if (!routeRegiao) { alert('Selecione a região desta marcação antes de finalizar.'); return; }
+    if (!routeRegiao) { toast('Selecione a região desta marcação antes de finalizar.', 'warning'); return; }
   }
   const label = rotuloDaCor(selectedColor);
 
@@ -2340,7 +2500,7 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
       label: label, color: selectedColor, points: pontos,
       startLabel: startLabel, endLabel: endLabel, regiao: routeRegiao
     }).catch(function(e) {
-      alert('Erro ao salvar a marcação no banco: ' + (e.message || e));
+      toast('Erro ao salvar a marcação no banco: ' + (e.message || e), 'error');
     });
   }
 
@@ -2360,7 +2520,7 @@ document.getElementById('finishLineBtn').addEventListener('click', function() {
 function renderRoutesList() {
   routesListEl.innerHTML = '';
   if (savedRoutes.length === 0) {
-    routesListEl.innerHTML = '<div style="color:#999; font-size:11.5px;">Nenhuma marcação salva ainda.</div>';
+    routesListEl.innerHTML = '<div class="empty-state">Nenhuma marcação salva ainda.</div>';
     return;
   }
   // A lista individual de marcações não é mais exibida aqui (a pedido).
@@ -2659,7 +2819,7 @@ window.__deletePhotoMarker = function(id) {
   renderPhotoMarkersList();
   if (DB_MODE && dbId) {
     Store.deletePhoto(dbId, fotoPath).catch(function(e) {
-      alert('Erro ao apagar a foto no banco: ' + (e.message || e));
+      toast('Erro ao apagar a foto no banco: ' + (e.message || e), 'error');
     });
   }
 };
@@ -2667,7 +2827,7 @@ window.__deletePhotoMarker = function(id) {
 function renderPhotoMarkersList() {
   photoMarkersListEl.innerHTML = '';
   if (photoMarkers.length === 0) {
-    photoMarkersListEl.innerHTML = '<div style="color:#999; font-size:11.5px;">Nenhuma foto marcada ainda.</div>';
+    photoMarkersListEl.innerHTML = '<div class="empty-state">Nenhuma foto marcada ainda.</div>';
     return;
   }
   photoMarkers.forEach(function(p) {
@@ -2762,7 +2922,7 @@ map.on('click', function(e) {
   let fotoRegiao = null;
   if (DB_MODE) {
     fotoRegiao = document.getElementById('photoRegion').value;
-    if (!fotoRegiao) { alert('Selecione a região da foto antes de posicionar.'); return; }
+    if (!fotoRegiao) { toast('Selecione a região da foto antes de posicionar.', 'warning'); return; }
   }
   photoIdCounter++;
   const entry = {
@@ -2784,7 +2944,7 @@ map.on('click', function(e) {
     Store.createPhoto(entry, {
       label: entry.label, dataUrl: dataUrl, lat: entry.lat, lng: entry.lng, regiao: fotoRegiao
     }).catch(function(err) {
-      alert('Erro ao salvar a foto no banco: ' + (err.message || err));
+      toast('Erro ao salvar a foto no banco: ' + (err.message || err), 'error');
       fotosLayer.removeLayer(entry.marker); // rollback do marcador local
       const i = photoMarkers.indexOf(entry);
       if (i >= 0) photoMarkers.splice(i, 1);
@@ -2939,7 +3099,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
     }
     modal.style.display = 'flex';
     const list = document.getElementById('auditList');
-    list.textContent = 'Carregando…';
+    list.innerHTML = '<div class="loading-state">Carregando…</div>';
     const res = await SB.from('auditoria').select('*').order('criado_em', { ascending: false }).limit(1000);
     if (res.error) { list.textContent = 'Erro: ' + res.error.message; return; }
     ultimosDados = res.data || [];
@@ -2959,11 +3119,11 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   let dadosCache = [];
   async function carregar() {
     const lista = document.getElementById('gerLista');
-    lista.textContent = 'Carregando…';
+    lista.innerHTML = '<div class="loading-state">Carregando…</div>';
     const res = await SB.from('allowlist').select('*').order('email');
     if (res.error) { lista.textContent = 'Erro: ' + res.error.message; return; }
     dadosCache = res.data || [];
-    if (!dadosCache.length) { lista.innerHTML = '<div class="ger-empty">Nenhum usuário cadastrado ainda.</div>'; return; }
+    if (!dadosCache.length) { lista.innerHTML = '<div class="empty-state">Nenhum usuário cadastrado ainda.</div>'; return; }
     lista.innerHTML = dadosCache.map(function(u) {
       const regs = (u.regioes || []).join(', ') || '—';
       return '<div class="ger-row"><div class="ger-info"><span class="ger-em">' + (u.nome || u.email) + '</span>' +
@@ -3062,7 +3222,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
   let eqView = 'equipes';
   async function carregar() {
     const lista = document.getElementById('eqLista');
-    lista.innerHTML = '<div class="eq-empty">Carregando…</div>';
+    lista.innerHTML = '<div class="loading-state">Carregando…</div>';
     const eq = await SB.from('equipes').select('*').order('regiao').order('nome');
     if (eq.error) { lista.innerHTML = '<div class="eq-empty">Erro: ' + esc(eq.error.message) + '</div>'; return; }
     const mem = await SB.from('equipe_membros').select('*').order('criado_em');
@@ -3320,7 +3480,7 @@ async function enterApp() {
       await Store.loadAll();
       iniciarRealtime();
     } catch (err) {
-      alert('Login OK, mas falhei ao carregar as marcações do banco: ' + (err.message || err));
+      toast('Login OK, mas falhei ao carregar as marcações do banco: ' + (err.message || err), 'error');
     }
   }
 
