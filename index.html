@@ -101,6 +101,57 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     /* -- Foco -- */
     --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--navy);
   }
+
+  /* ============================================================
+     COMPONENTES REUTILIZÁVEIS — Etapa 2 (.btn e .field).
+     Camada visual unificada, consome os tokens da Etapa 1.
+     Preserva a hierarquia de ação (cor por variante).
+     ============================================================ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    font-family: var(--font-sans); font-size: var(--fs-13); font-weight: var(--fw-semibold);
+    line-height: 1; white-space: nowrap; cursor: pointer;
+    padding: 8px 14px; border: 1px solid transparent; border-radius: var(--radius-sm);
+    background: var(--surface-3); color: var(--navy);
+    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+  }
+  .btn:hover { background: var(--border); }
+  .btn:active { transform: translateY(0.5px); }
+  .btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .btn:disabled, .btn[disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
+  .btn--block { width: 100%; }
+  /* Variantes (mantêm a cor/significado atual de cada ação) */
+  .btn--primary { background: var(--navy); color: #fff; }
+  .btn--primary:hover { background: var(--navy-hover); }
+  .btn--success { background: var(--success); color: #fff; }
+  .btn--success:hover { background: #256b2a; }
+  .btn--secondary { background: var(--surface-3); color: var(--navy); }
+  .btn--secondary:hover { background: var(--border); }
+  .btn--ghost { background: transparent; color: var(--navy); }
+  .btn--ghost:hover { background: var(--surface-3); }
+  .btn--danger { background: #fbe4e0; color: var(--danger); }
+  .btn--danger:hover { background: #f6d3cd; }
+  .btn--danger-ghost { background: transparent; color: var(--danger); }
+  .btn--danger-ghost:hover { background: #fbe4e0; }
+
+  /* Campos */
+  .field { margin-bottom: var(--sp-2); }
+  .field__label {
+    display: block; font-size: var(--fs-12); color: var(--text-muted);
+    font-weight: var(--fw-bold); margin-bottom: var(--sp-1);
+  }
+  .field__control {
+    width: 100%; padding: 7px 9px; box-sizing: border-box;
+    font-family: var(--font-sans); font-size: var(--fs-13); color: var(--text);
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  }
+  .field__control::placeholder { color: var(--text-faint); }
+  .field__control:hover { border-color: var(--text-faint); }
+  .field__control:focus-visible, .field__control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .field__control:disabled { background: var(--surface-2); color: var(--text-faint); cursor: default; }
+  .field__control.is-error, .field--error .field__control { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(184,50,39,0.12); }
+
   html, body { height: 100%; }
   body {
     margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -276,10 +327,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   /* Seletor de região nos painéis de ferramenta (só no modo banco) */
   .regionSelectWrap { margin-bottom: 8px; }
   .regionSelectWrap label { display: block; font-size: 10.5px; color: #555; font-weight: 700; margin-bottom: 3px; }
-  .regionSelectWrap select {
-    width: 100%; padding: 6px 7px; border: 1px solid #ccc; border-radius: 5px;
-    font-size: 12px; box-sizing: border-box; background: #fff;
-  }
+  /* selects migrados p/ .field__control (aparência) */
   body:not(.dbmode) .regionSelectWrap { display: none; }
 
   .onda-endpoint-label {
@@ -331,19 +379,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #photoPanel.open { display: block; }
   #photoPanel h3 { font-size: 13px; margin: 0 0 8px; color: #1a3a5c; }
   #photoPanel .hint { font-size: 11px; color: #777; margin-bottom: 10px; line-height: 1.4; }
-  #photoLabel {
-    width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px;
-    font-size: 12.5px; margin-bottom: 8px; box-sizing: border-box;
-  }
-  #photoPickBtn {
-    width: 100%; background: #1a3a5c; color: white; border: none; border-radius: 6px;
-    padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 6px;
-  }
-  #photoPickBtn:hover { background: #24537f; }
-  #photoCancelBtn {
-    width: 100%; background: #eef2f7; color: #1a3a5c; border: none; border-radius: 6px;
-    padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer; margin-bottom: 6px; display: none;
-  }
+  #photoLabel { margin-bottom: 8px; }  /* migrado p/ .field__control */
+  /* migrado p/ .btn — mantém só estrutura */
+  #photoPickBtn { margin-bottom: 6px; }
+  #photoCancelBtn { margin-bottom: 6px; display: none; }
   #photoPendingStatus { font-size: 11px; color: #b8730c; margin: 0 0 8px; line-height: 1.4; min-height: 14px; }
   #photoMarkersList { border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
   #photoMarkersList .photoItem {
@@ -355,7 +394,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   }
   #photoMarkersList .photoName { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #photoMarkersList .photoDel { background: none; border: none; color: #b83227; font-weight: 700; cursor: pointer; font-size: 13px; }
-  #clearAllPhotosBtn { width:100%; color: #b83227; margin-top: 8px; background:none; border:none; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+  #clearAllPhotosBtn { margin-top: 8px; }
 
   /* Photo pin marker on the map */
   .photo-pin { width: 36px; height: 46px; position: relative; }
@@ -418,13 +457,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   .swatch-tipo .tdot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto; }
   .colorCidadeHint { font-size: 10.5px; color: #888; font-weight: 600; margin: 0 0 5px; }
   .drawActions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .drawActions button {
-    flex: 1 1 auto; background: #eef2f7; color: #1a3a5c; border: none;
-    border-radius: 6px; padding: 6px 8px; font-size: 11.5px; font-weight: 600; cursor: pointer;
-  }
-  .drawActions button:hover { background: #dde6f0; }
-  .drawActions button.primary { background: #1a3a5c; color: white; }
-  .drawActions button.primary:hover { background: #24537f; }
+  .drawActions .btn { flex: 1 1 auto; }  /* botões migrados p/ .btn */
   #routesList { border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
   #routesList .routeItem {
     display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px;
@@ -434,7 +467,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #routesList .routeDel {
     background: none; border: none; color: #b83227; font-weight: 700; cursor: pointer; font-size: 13px;
   }
-  #clearAllBtn { color: #b83227; margin-top: 6px; }
+  #clearAllBtn { margin-top: 6px; }
 
   #downloadBtn {
     background: #ffffff; color: #1a3a5c; border: none; border-radius: 6px;
@@ -456,15 +489,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #saveModsPanel.open { display: block; }
   #saveModsPanel h3 { font-size: 13.5px; margin: 0 0 8px; color: #1a3a5c; }
   #saveModsPanel label { font-size: 10px; color: #666; display: block; margin-bottom: 3px; }
-  #saveModsPanel input {
-    width: 100%; padding: 5px 7px; border: 1px solid #ccc; border-radius: 5px;
-    font-size: 11px; margin-bottom: 8px; box-sizing: border-box;
-  }
+  #saveModsPanel input { margin-bottom: 8px; }  /* migrado p/ .field__control */
   #saveModsPanel .hint { font-size: 9.5px; color: #999; margin: 0 0 10px; line-height: 1.4; }
-  #saveModsSubmitBtn {
-    width: 100%; background: #2e7d32; color: white; border: none; border-radius: 6px;
-    padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
-  }
+  /* #saveModsSubmitBtn migrado p/ .btn.btn--success.btn--block */
   #saveModsStatus { font-size: 10.5px; color: #666; margin: 8px 0 0; line-height: 1.4; }
 
   #votersToggleBtn {
@@ -667,9 +694,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #facPanel.open { display: block; }
   #facPanel h3 { font-size: 13px; margin: 0 0 8px; color: #1a3a5c; }
   #facPanel .hint { font-size: 11px; color: #777; margin-bottom: 10px; line-height: 1.4; }
-  #facPlaceBtn { width: 100%; background: #1a3a5c; color: white; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
-  #facPlaceBtn:hover { background: #24537f; }
-  #facCancelBtn { width: 100%; background: #eef2f7; color: #1a3a5c; border: none; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  #facPlaceBtn { margin-bottom: 6px; }  /* migrado p/ .btn */
   @media (max-width: 640px) {
     #fabBar { max-width: none; gap: 8px; }
     #facToggleBtn { padding: 0; width: 46px; height: 46px; border-radius: 50%; justify-content: center; gap: 0; }
@@ -778,13 +803,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
     .flt-grp { width: 100%; margin: 4px 0 0; }
   }
   #drawPanel .secLabel { display: block; font-size: 10.5px; color: #667; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; margin: 10px 0 6px; }
-  #drawStartBtn {
-    width: 100%; padding: 11px; background: #2e7d32; color: #fff; border: none; border-radius: 8px;
-    font-size: 13.5px; font-weight: 800; cursor: pointer; margin: 12px 0 6px;
-    box-shadow: 0 3px 10px rgba(46,125,50,0.32); transition: filter .15s, transform .1s;
-  }
-  #drawStartBtn:hover { filter: brightness(1.07); }
-  #drawStartBtn:active { transform: scale(0.98); }
+  #drawStartBtn { margin: 12px 0 6px; }  /* migrado p/ .btn.btn--success.btn--block */
   #tipoSwatches { margin-bottom: 4px; }
   #colorSwatches { margin-bottom: 12px; }
   #drawPanel.recolhido, #photoPanel.recolhido, #facPanel.recolhido { display: none !important; }
@@ -859,7 +878,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <p class="hint">Clique no mapa para ir adicionando pontos ao longo da rua. Quando terminar, clique em "Finalizar traçado".</p>
   <div class="regionSelectWrap">
     <label>Região desta marcação</label>
-    <select id="drawRegion"></select>
+    <select id="drawRegion" class="field__control"></select>
   </div>
   <label class="secLabel">Tipo de marcação</label>
   <div id="tipoSwatches">
@@ -875,35 +894,35 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   </label>
   <div id="ondaAzulFields" style="display:none; background:#eaf2fb; border-radius:6px; padding:8px; margin-bottom:8px;">
     <p style="font-size:10.5px; color:#1565c0; font-weight:700; margin:0 0 6px;">🌊 ONDA AZUL — títulos nas pontas</p>
-    <input type="text" id="ondaStart" placeholder="Título do início" style="width:100%; padding:5px 7px; border:1px solid #b8d0ea; border-radius:5px; font-size:11.5px; margin-bottom:6px; box-sizing:border-box;">
-    <input type="text" id="ondaEnd" placeholder="Título do fim" style="width:100%; padding:5px 7px; border:1px solid #b8d0ea; border-radius:5px; font-size:11.5px; box-sizing:border-box;">
+    <input type="text" id="ondaStart" class="field__control" placeholder="Título do início" style="margin-bottom:6px;">
+    <input type="text" id="ondaEnd" class="field__control" placeholder="Título do fim">
   </div>
-  <button id="drawStartBtn">▶ Começar a desenhar</button>
+  <button id="drawStartBtn" class="btn btn--success btn--block">▶ Começar a desenhar</button>
   <div class="drawActions" style="display:none;">
-    <button id="undoPointBtn">↩ Desfazer ponto</button>
-    <button id="cancelLineBtn">✕ Cancelar</button>
-    <button id="finishLineBtn" class="primary">✓ Finalizar traçado</button>
+    <button id="undoPointBtn" class="btn btn--secondary">↩ Desfazer ponto</button>
+    <button id="cancelLineBtn" class="btn btn--secondary">✕ Cancelar</button>
+    <button id="finishLineBtn" class="btn btn--primary">✓ Finalizar traçado</button>
   </div>
   <button id="eraseToggleBtn" style="width:100%; background:#fbe4e0; color:#b83227; border:none; border-radius:6px; padding:8px; font-size:12px; font-weight:700; cursor:pointer; margin-bottom:10px;">🧹 Ativar modo apagar</button>
   <p id="eraseHint" style="font-size:10.5px; color:#888; margin:-6px 0 10px; line-height:1.4; display:none;">Modo apagar ativo: clique em qualquer linha do mapa para removê-la na hora.</p>
   <div id="routesList"></div>
-  <button id="clearAllBtn" style="width:100%; background:none; border:none; font-size:11.5px; font-weight:600; cursor:pointer;">Limpar todas as marcações</button>
+  <button id="clearAllBtn" class="btn btn--danger-ghost btn--block">Limpar todas as marcações</button>
 </div>
 
 <div id="photoPanel">
   <h3>Marcar com fotos</h3>
   <p class="hint">Escreva um nome, escolha uma foto e clique no mapa para posicionar. Passe o cursor sobre a marcação para ver a foto.</p>
-  <input type="text" id="photoLabel" placeholder="Nome da marcação (opcional)">
+  <input type="text" id="photoLabel" class="field__control" placeholder="Nome da marcação (opcional)">
   <div class="regionSelectWrap">
     <label>Região desta marcação</label>
-    <select id="photoRegion"></select>
+    <select id="photoRegion" class="field__control"></select>
   </div>
   <input type="file" id="photoFileInput" accept="image/*" style="display:none">
-  <button id="photoPickBtn">📷 Escolher foto e posicionar</button>
-  <button id="photoCancelBtn">✕ Cancelar</button>
+  <button id="photoPickBtn" class="btn btn--primary btn--block">📷 Escolher foto e posicionar</button>
+  <button id="photoCancelBtn" class="btn btn--secondary btn--block">✕ Cancelar</button>
   <p id="photoPendingStatus"></p>
   <div id="photoMarkersList"></div>
-  <button id="clearAllPhotosBtn">Limpar todas as fotos</button>
+  <button id="clearAllPhotosBtn" class="btn btn--danger-ghost btn--block">Limpar todas as fotos</button>
 </div>
 
 <div id="header">
@@ -959,16 +978,16 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <div id="saveModsConfig">
     <p class="hint">Configuração inicial (só na primeira vez): cole seu token do GitHub. Ele fica salvo só neste navegador e não some mais.</p>
     <label>Repositório</label>
-    <input type="text" id="ghRepo" value="Mateus-Gonzaga/monitoramento-campanha">
+    <input type="text" id="ghRepo" class="field__control" value="Mateus-Gonzaga/monitoramento-campanha">
     <label>Arquivo no repositório</label>
-    <input type="text" id="ghPath" value="index.html">
+    <input type="text" id="ghPath" class="field__control" value="index.html">
     <label>Personal Access Token</label>
-    <input type="password" id="ghToken" placeholder="github_pat_...">
-    <button id="saveModsConfigBtn" style="width:100%; background:#1a3a5c; color:white; border:none; border-radius:6px; padding:8px; font-size:12px; font-weight:700; cursor:pointer; margin-top:4px;">Salvar configuração</button>
+    <input type="password" id="ghToken" class="field__control" placeholder="github_pat_...">
+    <button id="saveModsConfigBtn" class="btn btn--primary btn--block" style="margin-top:4px;">Salvar configuração</button>
   </div>
   <div id="saveModsReady" style="display:none;">
     <p class="hint" style="margin-bottom:10px;">✓ Configurado. Clique abaixo para salvar suas alterações direto no site.</p>
-    <button id="saveModsSubmitBtn">💾 Salvar modificações agora</button>
+    <button id="saveModsSubmitBtn" class="btn btn--success btn--block">💾 Salvar modificações agora</button>
     <button id="saveModsResetBtn" style="width:100%; background:none; border:none; color:#888; font-size:10.5px; font-weight:600; cursor:pointer; margin-top:8px;">Trocar token / repositório</button>
   </div>
   <p id="saveModsStatus"></p>
@@ -979,7 +998,7 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   <p class="hint">Escolha o tipo e a região, clique em "Posicionar" e depois clique no mapa.</p>
   <div class="regionSelectWrap">
     <label>Tipo</label>
-    <select id="facTipo">
+    <select id="facTipo" class="field__control">
       <option value="upa">🚑 UPA</option>
       <option value="hospital">🏥 Hospital</option>
       <option value="delegacia">🚓 Delegacia</option>
@@ -988,10 +1007,10 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   </div>
   <div class="regionSelectWrap">
     <label>Região</label>
-    <select id="facRegion"></select>
+    <select id="facRegion" class="field__control"></select>
   </div>
-  <button id="facPlaceBtn" class="primary">📍 Posicionar no mapa</button>
-  <button id="facCancelBtn">✕ Cancelar</button>
+  <button id="facPlaceBtn" class="btn btn--primary btn--block">📍 Posicionar no mapa</button>
+  <button id="facCancelBtn" class="btn btn--secondary btn--block">✕ Cancelar</button>
   <p id="facStatus" style="font-size:11px; color:#b8730c; margin:8px 0 0;"></p>
 </div>
 
