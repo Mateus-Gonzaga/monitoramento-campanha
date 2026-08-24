@@ -1269,6 +1269,53 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
 })();
 </script>
 
+<script>
+/* ============================================================
+   A11y de MODAIS (Etapa 8) — camada de apresentação. NÃO altera lógica:
+   apenas adiciona role/aria-modal/aria-labelledby, foco preso (Tab),
+   Escape (prioridade abaixo do toast) e restauração de foco ao fechar.
+   Observa o display do próprio modal (mostrado via style.display por handlers
+   existentes) — sem recriar/renomear ids nem duplicar listeners de negócio.
+   ============================================================ */
+function enhanceModalA11y(modal, titleId) {
+  if (!modal || modal._a11y) return; modal._a11y = true;
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  if (titleId) modal.setAttribute('aria-labelledby', titleId);
+  function isOpen() { return getComputedStyle(modal).display !== 'none'; }
+  function focusables() {
+    return Array.prototype.slice.call(modal.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) { return el.offsetParent !== null; });
+  }
+  new MutationObserver(function () {
+    if (isOpen()) {
+      if (modal._open) return; modal._open = true;
+      modal._return = document.activeElement;
+      var f = focusables(); if (f.length) f[0].focus();
+    } else {
+      if (!modal._open) return; modal._open = false;
+      // Restaura o foco; se o gatilho ficou oculto (ex.: item de dropdown que
+      // fechou ao abrir), volta para o botão de conta como fallback sensato.
+      var target = (modal._return && modal._return.offsetParent) ? modal._return : document.getElementById('userMenuBtn');
+      if (target && target.focus) target.focus();
+    }
+  }).observe(modal, { attributes: true, attributeFilter: ['style'] });
+  document.addEventListener('keydown', function (e) {
+    if (!isOpen()) return;
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      modal.style.display = 'none'; e.stopImmediatePropagation(); e.preventDefault(); return;
+    }
+    if (e.key === 'Tab') {
+      var f = focusables(); if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+      else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+    }
+  }, true);
+}
+</script>
+
 <div id="authOverlay">
   <div class="authCard">
     <div id="authLoading">
@@ -1293,11 +1340,11 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   </div>
 </div>
 
-<button id="headerToggle" title="Ocultar menu">▲</button>
+<button id="headerToggle" title="Ocultar menu" aria-label="Ocultar cabeçalho"><span aria-hidden="true">▲</span></button>
 
 <div id="userMenu" style="display:none;">
-  <button id="userMenuBtn" title="Conta"><span id="userAvatar">•</span></button>
-  <div id="userDropdown" class="hidden">
+  <button id="userMenuBtn" title="Conta" aria-label="Conta" aria-haspopup="true" aria-expanded="false"><span id="userAvatar" aria-hidden="true">•</span></button>
+  <div id="userDropdown" class="hidden" role="group" aria-label="Conta">
     <div class="um-head">
       <div class="um-email" id="accEmail"></div>
       <div class="um-role" id="accRole"></div>
@@ -2027,9 +2074,10 @@ document.getElementById('fltToggleAll').addEventListener('click', function() {
   const btn = document.getElementById('userMenuBtn');
   const dd = document.getElementById('userDropdown');
   if (!btn || !dd) return;
-  btn.addEventListener('click', function(e) { e.stopPropagation(); dd.classList.toggle('hidden'); });
+  function refletirExpanded() { btn.setAttribute('aria-expanded', dd.classList.contains('hidden') ? 'false' : 'true'); }
+  btn.addEventListener('click', function(e) { e.stopPropagation(); dd.classList.toggle('hidden'); refletirExpanded(); });
   document.addEventListener('click', function(e) {
-    if (!dd.classList.contains('hidden') && !dd.contains(e.target) && e.target !== btn) dd.classList.add('hidden');
+    if (!dd.classList.contains('hidden') && !dd.contains(e.target) && e.target !== btn) { dd.classList.add('hidden'); refletirExpanded(); }
   });
 })();
 
@@ -3117,11 +3165,12 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'auditModal';
-      modal.innerHTML = '<div class="aud-box"><div class="aud-head"><b>📋 Auditoria</b><button id="auditCsv" title="Baixar CSV">⬇ CSV</button><button id="auditClose" title="Fechar">✕</button></div><div id="auditList">Carregando…</div></div>';
+      modal.innerHTML = '<div class="aud-box"><div class="aud-head"><b id="auditTitle">📋 Auditoria</b><button id="auditCsv" title="Baixar CSV" aria-label="Baixar CSV">⬇ CSV</button><button id="auditClose" title="Fechar" aria-label="Fechar">✕</button></div><div id="auditList">Carregando…</div></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
       document.getElementById('auditClose').addEventListener('click', function() { modal.style.display = 'none'; });
       document.getElementById('auditCsv').addEventListener('click', baixarCsv);
+      enhanceModalA11y(modal, 'auditTitle');
     }
     modal.style.display = 'flex';
     const list = document.getElementById('auditList');
@@ -3206,7 +3255,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
       const checks = Object.keys(REGION_COLORS).map(function(r) {
         return '<label class="ger-reg"><input type="checkbox" value="' + r + '"> ' + r + '</label>';
       }).join('');
-      modal.innerHTML = '<div class="ger-box"><div class="ger-head"><b>👥 Gerenciar usuários</b><button id="gerClose" title="Fechar">✕</button></div>' +
+      modal.innerHTML = '<div class="ger-box"><div class="ger-head"><b id="gerTitle">👥 Gerenciar usuários</b><button id="gerClose" title="Fechar" aria-label="Fechar">✕</button></div>' +
         '<div class="ger-form"><input id="gerNome" type="text" placeholder="Nome">' +
         '<input id="gerEmail" type="email" placeholder="email@gmail.com">' +
         '<select id="gerPapel"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="super_admin">Super admin</option></select>' +
@@ -3218,6 +3267,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
       document.getElementById('gerClose').addEventListener('click', function() { modal.style.display = 'none'; });
       document.getElementById('gerSalvar').addEventListener('click', salvar);
       document.getElementById('gerPapel').addEventListener('change', atualizarRegioes);
+      enhanceModalA11y(modal, 'gerTitle');
     }
     modal.style.display = 'flex';
     atualizarRegioes();
@@ -3374,7 +3424,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
     if (!modal) {
       modal = document.createElement('div'); modal.id = 'eqModal';
       const regs = Object.keys(REGION_COLORS).map(function(r) { return '<option value="' + r + '">' + r + '</option>'; }).join('');
-      modal.innerHTML = '<div class="eq-box"><div class="eq-head"><b>🧑‍🤝‍🧑 Equipes</b><button id="eqClose" title="Fechar">✕</button></div>' +
+      modal.innerHTML = '<div class="eq-box"><div class="eq-head"><b id="eqTitle">🧑‍🤝‍🧑 Equipes</b><button id="eqClose" title="Fechar" aria-label="Fechar">✕</button></div>' +
         '<div class="eq-form"><input id="eqNovoNome" class="eq-nome" type="text" placeholder="Nome da equipe (ex.: Equipe 1)">' +
         '<select id="eqNovaReg" class="eq-reg">' + regs + '</select>' +
         '<button id="eqCriar" class="eq-btn">+ Criar equipe</button></div>' +
@@ -3388,6 +3438,7 @@ document.getElementById('accLogoutBtn').addEventListener('click', doLogout);
       document.getElementById('eqCriar').addEventListener('click', criarEquipe);
       document.getElementById('eqViewEquipes').addEventListener('click', function() { eqView = 'equipes'; render(); });
       document.getElementById('eqViewTodos').addEventListener('click', function() { eqView = 'todos'; render(); });
+      enhanceModalA11y(modal, 'eqTitle');
     }
     modal.style.display = 'flex';
     document.getElementById('eqStatus').textContent = '';
@@ -3749,6 +3800,7 @@ const Store = {
       suppress = false;
     }
     var act = activePanel();
+    var nowOpen = !!act;
     if (act) {
       titleEl.textContent = act.title;
       icoEl.innerHTML = act.icon;
@@ -3756,6 +3808,16 @@ const Store = {
     } else {
       drawer.classList.remove('open');
     }
+    // Foco (a11y): entra no drawer ao abrir, restaura ao fechar. Pula o fluxo de
+    // desenho/apagar para não roubar o foco da barra flutuante #drawBar.
+    var noFluxo = (typeof drawMode !== 'undefined' && drawMode) || (typeof eraseMode !== 'undefined' && eraseMode);
+    if (nowOpen && !sync._wasOpen && !noFluxo) {
+      sync._return = document.activeElement;
+      var c = byId('drawerClose'); if (c) c.focus();
+    } else if (!nowOpen && sync._wasOpen && !noFluxo) {
+      if (sync._return && sync._return.focus && drawer.contains(document.activeElement)) sync._return.focus();
+    }
+    sync._wasOpen = nowOpen;
   }
 
   var obs = new MutationObserver(function (muts) {
