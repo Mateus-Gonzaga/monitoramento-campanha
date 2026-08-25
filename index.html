@@ -852,6 +852,31 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   /* Rodapé/status (conteúdo real gerado pelo JS) */
   #drawPanel #routesList { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; }
 
+  /* ===== Refinamento leve Fotos + Facilidades (Etapa 11) — só aparência,
+     preserva ids/handlers/upload/Supabase e o display JS-controlado do #photoCancelBtn ===== */
+  #photoPanel .hint, #facPanel .hint { font-size: var(--fs-12); color: var(--text-muted); margin-bottom: var(--sp-3); line-height: 1.45; }
+  #photoPanel .regionSelectWrap label, #facPanel .regionSelectWrap label,
+  #photoPanel > .secLabel, #facPanel > .secLabel {
+    display: block; font-size: var(--fs-12); color: var(--text-muted); font-weight: var(--fw-bold);
+    text-transform: none; letter-spacing: 0; margin-bottom: 5px;
+  }
+  /* Campos e botões de ação com alvo de toque confortável (escopado, não afeta outros painéis) */
+  #photoPanel .field__control, #facPanel .field__control { min-height: 44px; }
+  #photoPanel .btn, #facPanel .btn { min-height: 44px; }
+  #photoPanel #photoLabel { margin-bottom: var(--sp-3); }
+  #photoPanel .regionSelectWrap, #facPanel .regionSelectWrap { margin-bottom: var(--sp-3); }
+  /* Linhas de status consistentes (conteúdo é escrito pelo JS; aqui só a aparência) */
+  #photoPanel #photoPendingStatus { font-size: var(--fs-12); color: var(--warning); line-height: 1.4; margin: 2px 0 8px; min-height: 16px; }
+  #facPanel .fac-status { font-size: var(--fs-12); color: var(--warning); line-height: 1.4; margin: 8px 0 0; }
+  /* Lista de fotos: item confortável + alvo de toque do excluir (handler intacto) */
+  #photoPanel #photoMarkersList { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; }
+  #photoPanel #photoMarkersList .photoDel {
+    width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm); flex: 0 0 auto;
+  }
+  #photoPanel #photoMarkersList .photoDel:hover { background: #fbe4e0; }
+  #photoPanel #photoMarkersList .photoDel:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
   #drawPanel.recolhido, #photoPanel.recolhido, #facPanel.recolhido { display: none !important; }
   #drawBar {
     position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 3100;
@@ -1461,9 +1486,10 @@ function enhanceModalA11y(modal, titleId) {
 <div id="photoPanel">
   <h3>Marcar com fotos</h3>
   <p class="hint">Escreva um nome, escolha uma foto e clique no mapa para posicionar. Passe o cursor sobre a marcação para ver a foto.</p>
+  <label for="photoLabel" class="secLabel">Nome da marcação</label>
   <input type="text" id="photoLabel" class="field__control" placeholder="Nome da marcação (opcional)">
   <div class="regionSelectWrap">
-    <label>Região desta marcação</label>
+    <label for="photoRegion">Região desta marcação</label>
     <select id="photoRegion" class="field__control"></select>
   </div>
   <input type="file" id="photoFileInput" accept="image/*" style="display:none">
@@ -1581,7 +1607,7 @@ function enhanceModalA11y(modal, titleId) {
   <h3>Marcar facilidade</h3>
   <p class="hint">Escolha o tipo e a região, clique em "Posicionar" e depois clique no mapa.</p>
   <div class="regionSelectWrap">
-    <label>Tipo</label>
+    <label for="facTipo">Tipo</label>
     <select id="facTipo" class="field__control">
       <option value="upa">🚑 UPA</option>
       <option value="hospital">🏥 Hospital</option>
@@ -1590,12 +1616,12 @@ function enhanceModalA11y(modal, titleId) {
     </select>
   </div>
   <div class="regionSelectWrap">
-    <label>Região</label>
+    <label for="facRegion">Região</label>
     <select id="facRegion" class="field__control"></select>
   </div>
   <button id="facPlaceBtn" class="btn btn--primary btn--block">📍 Posicionar no mapa</button>
   <button id="facCancelBtn" class="btn btn--secondary btn--block">✕ Cancelar</button>
-  <p id="facStatus" style="font-size:11px; color:#b8730c; margin:8px 0 0;"></p>
+  <p id="facStatus" class="fac-status"></p>
 </div>
 
 <button id="votersToggleBtn" title="Ver eleitores por região"><span class="fab-ico">📊</span><span class="fab-txt">Eleitores por região</span></button>
@@ -2970,9 +2996,9 @@ function renderPhotoMarkersList() {
     const item = document.createElement('div');
     item.className = 'photoItem';
     item.innerHTML =
-      '<img class="photoThumb" src="' + p.photo + '">' +
+      '<img class="photoThumb" alt="Foto: ' + (p.label || 'Sem título') + '" src="' + p.photo + '">' +
       '<span class="photoName">' + (p.label || 'Sem título') + '</span>' +
-      '<button class="photoDel" data-id="' + p.id + '" title="Remover">✕</button>';
+      '<button class="photoDel" data-id="' + p.id + '" title="Remover" aria-label="Remover foto ' + (p.label || 'Sem título') + '">✕</button>';
     photoMarkersListEl.appendChild(item);
   });
   photoMarkersListEl.querySelectorAll('.photoDel').forEach(function(btn) {
