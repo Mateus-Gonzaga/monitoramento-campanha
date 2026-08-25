@@ -217,6 +217,9 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   }
   #headerToggle:hover { background: #24537f; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
   #headerToggle:active { transform: translateY(0) scale(0.94); }
+  /* Opção de recolher o cabeçalho inativada (a pedido) — botão mantido no DOM,
+     apenas oculto e sem interação. Reverter = remover esta regra. */
+  #headerToggle { display: none !important; }
   #mapOuter { position: relative; flex: 1 1 auto; overflow: hidden; background: #dde5ec; }
   #map {
     position: absolute; top: 50%; left: 50%;
