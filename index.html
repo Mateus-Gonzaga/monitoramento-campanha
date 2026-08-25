@@ -809,6 +809,49 @@ const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('COLE_') !== 0)
   #drawStartBtn { margin: 12px 0 6px; }  /* migrado p/ .btn.btn--success.btn--block */
   #tipoSwatches { margin-bottom: 4px; }
   #colorSwatches { margin-bottom: 12px; }
+
+  /* ===== Refinamento visual do painel "Marcar ruas" (Etapa 10) — só aparência,
+     preserva ids/classes/contrato de swatches (.swatch/.swatch-tipo/data-color/.selected) ===== */
+  #drawPanel .hint { font-size: var(--fs-12); color: var(--text-muted); margin-bottom: var(--sp-3); line-height: 1.45; }
+  #drawPanel .regionSelectWrap { margin-bottom: var(--sp-3); }
+  #drawPanel .regionSelectWrap label { font-size: var(--fs-12); color: var(--text-muted); font-weight: var(--fw-bold); text-transform: none; letter-spacing: 0; margin-bottom: 5px; }
+  #drawPanel #drawRegion { width: 100%; min-height: 44px; }
+  #drawPanel .secLabel { font-size: var(--fs-12); color: var(--text-muted); letter-spacing: .5px; margin: 14px 0 7px; }
+  /* Tipo de marcação: cards horizontais, selecionado = borda navy + fundo azulado */
+  #drawPanel #tipoSwatches { gap: 7px; margin-bottom: 12px; }
+  #drawPanel .swatch-tipo {
+    min-height: 44px; width: 100%; padding: 0 12px; gap: 10px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface-2); font-size: var(--fs-13); color: var(--text);
+  }
+  #drawPanel .swatch-tipo:hover { background: var(--surface-3); }
+  #drawPanel .swatch-tipo.selected { border-color: var(--navy); background: #eaf1f8; box-shadow: inset 0 0 0 1px var(--navy); font-weight: var(--fw-bold); }
+  #drawPanel .swatch-tipo:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  #drawPanel .swatch-tipo .tdot { width: 15px; height: 15px; box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(16,24,40,.12); }
+  /* Cor de cidade: grade de círculos com alvo de toque + indicador acessível (anel navy + check) */
+  #drawPanel #colorSwatches { gap: 8px; }
+  #drawPanel .swatch {
+    width: 30px; height: 30px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); position: relative;
+  }
+  #drawPanel .swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--navy); }
+  #drawPanel .swatch.selected::after {
+    content: ""; position: absolute; left: 50%; top: 46%; width: 9px; height: 5px;
+    border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+    transform: translate(-50%,-50%) rotate(-45deg); filter: drop-shadow(0 0 1px rgba(0,0,0,.5));
+  }
+  #drawPanel .swatch:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--navy), var(--focus-ring); }
+  /* Área de cobertura */
+  #drawPanel .areaMode-row {
+    display: flex; align-items: center; gap: 9px; min-height: 44px; cursor: pointer;
+    font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--navy); margin: 4px 0 12px;
+  }
+  #drawPanel .areaMode-row input { width: 18px; height: 18px; accent-color: var(--navy); flex: 0 0 auto; cursor: pointer; }
+  /* Ação primária (verde) e secundária/perigosa (rosa) com alvo de toque */
+  #drawPanel #drawStartBtn { min-height: 46px; font-size: var(--fs-14); }
+  #drawPanel #eraseToggleBtn { min-height: 44px; border-radius: var(--radius-sm); }
+  /* Rodapé/status (conteúdo real gerado pelo JS) */
+  #drawPanel #routesList { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; }
+
   #drawPanel.recolhido, #photoPanel.recolhido, #facPanel.recolhido { display: none !important; }
   #drawBar {
     position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 3100;
@@ -1386,16 +1429,16 @@ function enhanceModalA11y(modal, titleId) {
     <label>Região desta marcação</label>
     <select id="drawRegion" class="field__control"></select>
   </div>
-  <label class="secLabel">Tipo de marcação</label>
-  <div id="tipoSwatches">
-    <div class="swatch-tipo selected" data-color="#d32f2f"><span class="tdot" style="background:#d32f2f"></span>Zona quente</div>
-    <div class="swatch-tipo" data-color="#1565c0"><span class="tdot" style="background:#1565c0"></span>Onda Azul</div>
-    <div class="swatch-tipo" data-color="#000000"><span class="tdot" style="background:#000000"></span>Onde irá passar</div>
-    <div class="swatch-tipo" data-color="#6a1b9a"><span class="tdot" style="background:#6a1b9a"></span>Carreata</div>
+  <label class="secLabel" id="tipoSwatchesLabel">Tipo de marcação</label>
+  <div id="tipoSwatches" role="radiogroup" aria-labelledby="tipoSwatchesLabel">
+    <div class="swatch-tipo selected" data-color="#d32f2f" role="radio" tabindex="0" aria-checked="true" aria-label="Zona quente"><span class="tdot" style="background:#d32f2f"></span>Zona quente</div>
+    <div class="swatch-tipo" data-color="#1565c0" role="radio" tabindex="0" aria-checked="false" aria-label="Onda Azul"><span class="tdot" style="background:#1565c0"></span>Onda Azul</div>
+    <div class="swatch-tipo" data-color="#000000" role="radio" tabindex="0" aria-checked="false" aria-label="Onde irá passar"><span class="tdot" style="background:#000000"></span>Onde irá passar</div>
+    <div class="swatch-tipo" data-color="#6a1b9a" role="radio" tabindex="0" aria-checked="false" aria-label="Carreata"><span class="tdot" style="background:#6a1b9a"></span>Carreata</div>
   </div>
-  <label class="secLabel">ou a cor de uma cidade</label>
-  <div id="colorSwatches"></div>
-  <label id="areaModeWrap" style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#1a3a5c; margin-bottom:10px; cursor:pointer;">
+  <label class="secLabel" id="colorSwatchesLabel">ou a cor de uma cidade</label>
+  <div id="colorSwatches" role="radiogroup" aria-labelledby="colorSwatchesLabel"></div>
+  <label id="areaModeWrap" class="areaMode-row">
     <input type="checkbox" id="areaMode"> 🗺️ Área de cobertura (fecha e preenche)
   </label>
   <div id="ondaAzulFields" style="display:none; background:#eaf2fb; border-radius:6px; padding:8px; margin-bottom:8px;">
@@ -2409,6 +2452,10 @@ function gerarSwatchesCidades() {
     const sw = document.createElement('div');
     sw.className = 'swatch';
     sw.setAttribute('data-color', REGION_COLORS[cidade]);
+    sw.setAttribute('role', 'radio');
+    sw.setAttribute('tabindex', '0');
+    sw.setAttribute('aria-checked', 'false');
+    sw.setAttribute('aria-label', 'Cor: ' + cidade);
     sw.style.background = REGION_COLORS[cidade];
     sw.title = cidade; // nome da cidade no hover
     cont.appendChild(sw);
@@ -2419,12 +2466,24 @@ function gerarSwatchesCidades() {
 document.addEventListener('click', function(e) {
   const sw = e.target.closest('.swatch, .swatch-tipo');
   if (!sw || !sw.hasAttribute('data-color')) return;
-  document.querySelectorAll('.swatch, .swatch-tipo').forEach(function(s) { s.classList.remove('selected'); });
+  document.querySelectorAll('.swatch, .swatch-tipo').forEach(function(s) {
+    s.classList.remove('selected');
+    if (s.hasAttribute('role')) s.setAttribute('aria-checked', 'false');
+  });
   sw.classList.add('selected');
+  if (sw.hasAttribute('role')) sw.setAttribute('aria-checked', 'true');
   selectedColor = sw.getAttribute('data-color');
   document.getElementById('ondaAzulFields').style.display =
     (selectedColor === ONDA_AZUL_COLOR) ? 'block' : 'none';
   redrawCurrentLine();
+});
+// Acessibilidade por teclado dos swatches (radio): Enter/Espaço reusa o clique acima.
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+  const sw = e.target.closest && e.target.closest('.swatch, .swatch-tipo');
+  if (!sw || !sw.hasAttribute('data-color')) return;
+  e.preventDefault();
+  sw.click();
 });
 
 // Sai do modo desenho e restaura tudo (usado ao Finalizar/Cancelar).
